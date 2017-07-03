@@ -93,7 +93,7 @@ class Cache:
             return info
         except TypeError:
             if nolookup:
-                raise exceptions.CacheMissException() from None
+                raise exceptions.CacheMissException(url) from None
             else:
                 self.lookup_webpage(url)
                 return self.get_webpage(url, nolookup=True)
