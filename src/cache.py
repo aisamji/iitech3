@@ -63,6 +63,7 @@ class Cache:
         if version < self.DB_VERSION:
             self._database.executescript(self.DB_MANAGEMENT_SCRIPTS[version])
         self._database.execute('PRAGMA user_version={:d}'.format(self.DB_VERSION))
+        self._database.commit()
 
     def __del__(self):
         """Clean up the database connection used by the cache object."""
@@ -78,6 +79,7 @@ class Cache:
         response = requests.get(url)
         self._database.execute(self.WEBPAGE_SET_STATEMENT,
                                (url, response.status_code, datetime.datetime.today()))
+        self._database.commit()
         response.close()
 
     def get_webpage(self, url, *, nolookup=False):
@@ -112,6 +114,7 @@ class Cache:
         status = int(status)
         self._database.execute(self.WEBPAGE_SET_STATEMENT,
                                (url, status, datetime.datetime.today()))
+        self._database.commit()
 
     # Methods for managing email information
     def lookup_email(self, address):
