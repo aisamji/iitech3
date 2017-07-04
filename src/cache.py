@@ -6,11 +6,25 @@ import requests
 import exceptions
 
 
+# Global variables to configure used by the class to allow for easy configuration
 DB_PATH = '/Users/aisamji09/Projects/iitech3/data/cache.db'  # Set by setup.py according to the OS in use.
 MAX_AGE = 14  # The age in days of a value before the cache considers it too old.
 
-# TODO: add converter and adapter to translate datetime objects from/to python and sqlite3
-# TODO: add converter and adapter to translate bool values from/to python and sqlite3
+
+# Custom adapters and converters to translate between python and sqlite data
+def _convert_datetime(sql_value):
+    return datetime.strptime(sql_value.decode('utf-8'), '%Y%m%d%H%M%S')
+
+
+def _adapt_datetime(py_value):
+    return py_value.strftime('%Y%m%d%H%M%S')
+
+
+sqlite3.register_converter('DATETIME', _convert_datetime)
+sqlite3.register_converter('BOOL', bool)
+sqlite3.register_adapter(datetime.datetime, _adapt_datetime)
+# sqlite3 has a predefined function to adapt a bool into an integer
+# sqlite3.register_adapter(bool, int)
 
 
 def getCache():
@@ -60,7 +74,7 @@ class Cache:
         """
         db_path = str(db_path)
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
-        self._database = sqlite3.connect(db_path)
+        self._database = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES)
         version = self._database.execute('PRAGMA user_version').fetchone()[0]
         if version < self.DB_VERSION:
             self._database.executescript(self.DB_MANAGEMENT_SCRIPTS[version])
@@ -130,7 +144,7 @@ class Cache:
         response = requests.get(self.EMAIL_API_ENDPOINT.format(address))
         results = response.json()
         self._database.execute(self.EMAIL_SET_STATEMENT,
-                               (address, 0 if results['safe_to_send'] == 'false' else 1,
+                               (address, False if results['safe_to_send'] == 'false' else True,
                                 results['reason'], datetime.datetime.today()))
         self._database.commit()
         response.close()
