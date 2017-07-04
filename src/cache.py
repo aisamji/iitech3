@@ -13,7 +13,7 @@ MAX_AGE = 14  # The age in days of a value before the cache considers it too old
 
 # Custom adapters and converters to translate between python and sqlite data
 def _convert_datetime(sql_value):
-    return datetime.strptime(sql_value.decode('utf-8'), '%Y%m%d%H%M%S')
+    return datetime.datetime.strptime(sql_value.decode('utf-8'), '%Y%m%d%H%M%S')
 
 
 def _adapt_datetime(py_value):
@@ -109,8 +109,9 @@ class Cache:
         nolookup = bool(nolookup)
         response = self._database.execute(self.WEBPAGE_GET_STATEMENT, (url,)).fetchone()
         try:
-            if (datetime.datetime.today() - response[3]) >= MAX_AGE:
-                self.lookup_webpage(url)
+            if (datetime.datetime.today() - response[-1]) >= datetime.timedelta(days=MAX_AGE):
+                if not nolookup:
+                    self.lookup_webpage(url)
         except TypeError:
             if nolookup:
                 raise exceptions.CacheMissException(url) from None
@@ -160,8 +161,9 @@ class Cache:
         nolookup = bool(nolookup)
         response = self._database.execute(self.EMAIL_GET_STATEMENT, (address,)).fetchone()
         try:
-            if (datetime.datetime.today() - response[3]) >= MAX_AGE:
-                self.lookup_email(address)
+            if (datetime.datetime.today() - response[-1]) >= datetime.timedelta(days=MAX_AGE):
+                if not nolookup:
+                    self.lookup_email(address)
         except TypeError:
             if nolookup:
                 raise exceptions.CacheMissException(address) from None
