@@ -6,14 +6,16 @@ import requests
 import exceptions
 
 
-# TODO: add variables or config file to define what data in the cache is too old.
+DB_PATH = '/Users/aisamji09/Projects/iitech3/data/cache.db'  # Set by setup.py according to the OS in use.
+MAX_AGE = 14  # The age in days of a value before the cache considers it too old.
+
 # TODO: add converter and adapter to translate datetime objects from/to python and sqlite3
 # TODO: add converter and adapter to translate bool values from/to python and sqlite3
 
 
 def getCache():
     """Get a cache object created with the default values."""
-    pass
+    return Cache(DB_PATH)
 
 
 class InfoHolder:
@@ -93,15 +95,17 @@ class Cache:
         nolookup = bool(nolookup)
         response = self._database.execute(self.WEBPAGE_GET_STATEMENT, (url,)).fetchone()
         try:
-            info = InfoHolder(url=response[0], status=response[1],
-                              last_lookup=response[2])
-            return info
+            if (datetime.datetime.today() - response[3]) >= MAX_AGE:
+                self.lookup_webpage(url)
         except TypeError:
             if nolookup:
                 raise exceptions.CacheMissException(url) from None
             else:
                 self.lookup_webpage(url)
-                return self.get_webpage(url, nolookup=True)
+                response = self._database.execute(self.WEBPAGE_GET_STATEMENT, (url,)).fetchone()
+        info = InfoHolder(url=response[0], status=response[1],
+                          last_lookup=response[2])
+        return info
 
     def set_webpage(self, url, status):
         """Manually set the status of the given url.
@@ -142,15 +146,17 @@ class Cache:
         nolookup = bool(nolookup)
         response = self._database.execute(self.EMAIL_GET_STATEMENT, (address,)).fetchone()
         try:
-            info = InfoHolder(address=response[0], is_valid=response[1],
-                              reason=response[2], last_lookup=response[3])
-            return info
+            if (datetime.datetime.today() - response[3]) >= MAX_AGE:
+                self.lookup_email(address)
         except TypeError:
             if nolookup:
                 raise exceptions.CacheMissException(address) from None
             else:
                 self.lookup_email(address)
-                return self.get_email(address, nolookup=True)
+                response = self._database.execute(self.EMAIL_GET_STATEMENT, (address,)).fetchone()
+        info = InfoHolder(address=response[0], is_valid=response[1],
+                          reason=response[2], last_lookup=response[3])
+        return info
 
     def set_email(self, address, is_valid):
         """Manually set the validity of the address.
