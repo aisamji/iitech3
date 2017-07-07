@@ -25,12 +25,12 @@ class Document:
 
     # BeautifulSoup Search helpers
     @staticmethod
-    def _is_external_link(link):
-        """Determine whether link points to an external website."""
-        if link.name != 'a' or link.get('href') is None:
+    def _is_external_link(tag):
+        """Determine whether a tag is a link that points to an external resource."""
+        if tag.name != 'a' or tag.get('href') is None:
             return False
         result = re.match(r'(?:##TrackClick##)?https?://(?:[a-z0-9]+\.)?[a-z0-9]+\.[a-z0-9]+|##.+##$',
-                          link['href'], re.I)
+                          tag['href'], re.I)
         return result is not None
 
     @staticmethod
@@ -50,7 +50,10 @@ class Document:
     def _fix_external_link(self, link):
         """Fix an 'a' tag that references an external resource.
 
+        Confirm that the 'a' tag does not have an empty link.
         Confirm that the 'a' tag is set to open in a new window.
+        Confirm that the 'a' tag does not have an existing tracking link.
+        Confirm that the 'a' tag has a valid link.
         """
         debug('\nExamining {!r:}'.format(link['href']))
 
@@ -64,7 +67,7 @@ class Document:
             pass
 
         debug('Correcting target . . . ', end='')
-        if link['target'] is None or link['target'].lower() != '_blank':
+        if link.get('target') is None or link['target'].lower() != '_blank':
             link['target'] = '_blank'
             debug('SET TO NEW WINDOW')
         else:
@@ -83,7 +86,6 @@ class Document:
 
         debug('Validating url . . . ', end='')
         if re.match(r'^##.+##$', link['href']) is None:
-            debug('Validating url . . . ', end='')
             url = re.sub(r'^##.+##', '', link['href'])
             info = cache.get_default().get_webpage(url)
             if 400 <= info.status < 600:
