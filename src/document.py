@@ -11,7 +11,6 @@ def debug(*args, **kwargs):
 
 
 # The review method should eventually . . .
-# TODO: ensure all internal links refer to a valid anchor.
 # TODO: ensure all emails are valid.
 # TODO: ensure all email addresses are hyperlinked.
 # TODO: ensure all urls are hyperlinked.
@@ -24,6 +23,7 @@ class Document:
         code = code.replace('“', '"', 2).replace('”', '"', 2)  # DOCTYPE fix for Ismaili Insight newsletter
         self._data = bs4.BeautifulSoup(code, 'html5lib')
 
+    # BeautifulSoup Search helpers
     @staticmethod
     def _is_external_link(link):
         """Determine whether link points to an external website."""
@@ -33,6 +33,20 @@ class Document:
                           link['href'], re.I)
         return result is not None
 
+    @staticmethod
+    def _is_internal_link(tag):
+        """Determine whether a tag is link that refers to an anchor in the document."""
+        if tag.name != 'a' or tag.get('href') is None:
+            return False
+        result = re.match(r'#(?!#)', tag['href'])
+        return result is not None
+
+    @staticmethod
+    def _is_anchor(tag):
+        """Determine whether a tag creates a new anchor in the document."""
+        return tag.name == 'a' and tag.get('name') is not None
+
+    # review method and helpers
     def _fix_external_link(self, link):
         """Fix an 'a' tag that references an external resource.
 
@@ -82,6 +96,22 @@ class Document:
             debug('VARIABLE NOT CHECKED')
             pass
 
+    def _fix_internal_link(self, link, anchors):
+        """Fix an 'a' tag that references an anchor in the document.
+
+        Confirm that the 'a' tag refers to an existing anchor.
+        """
+        debug('\nExamining {!r:}'.format(link['href']))
+
+        debug('Verifying anchor . . . ', end='')
+        name = link['href'][1:]  # strip off the leading '#'
+        if name in anchors:
+            debug('EXISTS')
+            pass
+        else:
+            debug('NOT FOUND')
+            link.insert(0, '*NOTFOUND {:s}*'.format(name))
+
     def review(self):
         """Review the document for errors.
 
@@ -89,7 +119,11 @@ class Document:
         """
         external_links = self._data.find_all(self._is_external_link)
         [self._fix_external_link(link) for link in external_links]
+        anchors = [a['name'] for a in self._data.find_all(self._is_anchor)]
+        internal_links = self._data.find_all(self._is_internal_link)
+        [self._fix_internal_link(link, anchors) for link in internal_links]
 
+    # display method
     def __str__(self):
         """Get the html code of the document."""
         code = self._data.prettify().replace('"', '“', 1).replace('"', '”', 1)
