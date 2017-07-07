@@ -38,22 +38,19 @@ class Response:
 
 
 responses = {
-    Response('https://www.google.com'),
-    Response('richard@quickemailverification.com',
-             '''{
-                   "result":"invalid",
-                   "reason":"rejected_email",
-                   "disposable":"false",
-                   "accept_all":"false",
-                   "role":"false",
-                   "email":"richard@quickemailverification.com",
-                   "user":"richard",
-                   "domain":"quickemailverification.com",
-                   "safe_to_send":"false",
-                   "success":"true",
-                   "message":null
-                   }''')
+    'https://www.google.com':
+        Response('https://www.google.com'),
+    'http://api.quickemailverification.com/v1/verify?email=richard@quickemailverification.com&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55':
+        Response('http://api.quickemailverification.com/v1/verify?email=richard@quickemailverification.com&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55',
+                 '{"result":"invalid", "reason":"rejected_email", "disposable":"false", "accept_all":"false",'
+                 '"role":"false", "email":"richard@quickemailverification.com", "user":"richard",'
+                 '"domain":"quickemailverification.com", "safe_to_send":"false", "success":"true",'
+                 '"message":null}')
     }
 
 
-get = mock.Mock(side_effect=responses)
+def _get(url):
+    return responses[url]
+
+
+get = mock.Mock(side_effect=_get)
