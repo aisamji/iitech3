@@ -12,7 +12,6 @@ def debug(*args, **kwargs):
 
 
 # The review method should eventually . . .
-# TODO: ensure all emails are valid.
 # TODO: ensure all email addresses are hyperlinked.
 # TODO: ensure all urls are hyperlinked.
 # TODO: allow interactive edit when applicable.
@@ -51,6 +50,14 @@ class Document:
     def _is_anchor(tag):
         """Determine whether a tag creates a new anchor in the document."""
         return tag.name == 'a' and tag.get('name') is not None
+
+    @staticmethod
+    def _is_email(tag):
+        """Determine whether a tag is a mailto link."""
+        if tag.name != 'a' or tag.get('href') is None:
+            return False
+        result = re.match(r'mailto:', tag['href'], re.I)
+        return result is not None
 
     # review method and helpers
     def _fix_external_link(self, link):
@@ -92,7 +99,7 @@ class Document:
 
         debug('Validating url . . . ', end='')
         if re.match(r'^##.+##$', link['href']) is None:
-            url = re.sub(r'^##.+##', '', link['href'])
+            url = re.sub(r'^##.+##', '', link['href'])  # strip off the ##TRACKCLICK## if applicable
             info = cache.get_default().get_webpage(url)
             if 400 <= info.status < 600:
                 debug('MARKED BROKEN')
@@ -120,6 +127,23 @@ class Document:
             debug('NOT FOUND')
             link.insert(0, '*NOTFOUND {:s}*'.format(name))
 
+    def _fix_email(self, email):
+        """Fix an 'a' tag that composes an email.
+
+        Confirm that the 'a' tag has a valid email.
+        """
+        email['href'] = re.sub(r'%20', '', email['href']) # remove unnecesary spaces
+        address = email['href'][7:]  # strip off the leading mailto:
+        debug('\nExamining {!r:}'.format(address))
+
+        debug('Verifying address . . . ', end='')
+        info = cache.get_default().get_email(address)
+        if info.is_valid:
+            debug('GOOD')
+        else:
+            debug('BAD')
+            email.insert(0, '*BAD {:s}*'.format(info.reason))
+
     def review(self):
         """Review the document for errors.
 
@@ -130,6 +154,8 @@ class Document:
         anchors = [a['name'] for a in self._data.find_all(self._is_anchor)]
         internal_links = self._data.find_all(self._is_internal_link)
         [self._fix_internal_link(link, anchors) for link in internal_links]
+        emails = self._data.find_all(self._is_email)
+        [self._fix_email(email) for email in emails]
 
     # display method
     def __str__(self):
