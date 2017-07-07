@@ -1,5 +1,6 @@
 """Classes and constants that represent an Ismaili Insight HTML newsletter."""
 import re
+import os
 import bs4
 from requests import compat as urlfix
 import cache
@@ -20,6 +21,11 @@ class Document:
 
     def __init__(self, code):
         """Initialize a document from the given code."""
+        code = str(code)
+        if os.path.isfile(code):
+            with open(code, 'r') as markup:
+                data = markup.read()
+            code = data
         code = code.replace('“', '"', 2).replace('”', '"', 2)  # DOCTYPE fix for Ismaili Insight newsletter
         self._data = bs4.BeautifulSoup(code, 'html5lib')
 
