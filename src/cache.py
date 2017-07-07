@@ -10,6 +10,10 @@ import exceptions
 DB_PATH = '/Users/aisamji09/Projects/iitech3/data/cache.db'  # Set by setup.py according to the OS in use.
 MAX_AGE = 14  # The age in days of a value before the cache considers it too old.
 
+# TODO: Convert cache into Singletonish class that has a get_default method
+# Private variables
+_cache = None
+
 
 # Custom adapters and converters to translate between python and sqlite data
 def _convert_datetime(sql_value):
@@ -23,13 +27,15 @@ def _adapt_datetime(py_value):
 sqlite3.register_converter('DATETIME', _convert_datetime)
 sqlite3.register_converter('BOOL', bool)
 sqlite3.register_adapter(datetime.datetime, _adapt_datetime)
-# sqlite3 has a predefined function to adapt a bool into an integer
-# sqlite3.register_adapter(bool, int)
+# sqlite3 has a predefined adapter registered for bool to integer
 
 
-def getCache():
+def get_default():
     """Get a cache object created with the default values."""
-    return Cache(DB_PATH)
+    global _cache
+    if _cache is None:
+        _cache = Cache(DB_PATH)
+    return _cache
 
 
 class InfoHolder:
