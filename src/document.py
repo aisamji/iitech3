@@ -5,6 +5,11 @@ from requests import compat as urlfix
 import cache
 
 
+def debug(*args, **kwargs):
+    """Print some text if in debug mode."""
+    print(*args, **kwargs)
+
+
 # The review method should eventually . . .
 # TODO: ensure all internal links refer to a valid anchor.
 # TODO: ensure all emails are valid.
@@ -33,45 +38,49 @@ class Document:
 
         Confirm that the 'a' tag is set to open in a new window.
         """
-        # print('Examining {!r:}'.format(link['href']))
+        debug('\nExamining {!r:}'.format(link['href']))
 
-        # print('Verifying usefulness . . . ', end='')
-        if link['href'] == '##TRACKCLICK##':
+        debug('Verifying usefulness . . . ', end='')
+        if link['href'] in ('##TRACKCLICK##', ''):
             link.decompose()
-            # print('REMOVED')
+            debug('REMOVED')
             return
         else:
-            # print('NOTHING TO DO')
+            debug('NOT EMPTY')
             pass
 
-        # print('Correcting target . . . ', end='')
+        debug('Correcting target . . . ', end='')
         if link['target'] is None or link['target'].lower() != '_blank':
             link['target'] = '_blank'
-            # print('SET TO NEW WINDOW')
+            debug('SET TO NEW WINDOW')
         else:
-            # print('NOTHING TO DO')
+            debug('NOTHING TO DO')
             pass
 
-        # print('Checking for extra tracker . . . ', end='')
+        debug('Cleaning extra tracker . . . ', end='')
         match = re.match(r'http://www\.ismailiinsight\.org/enewsletterpro/(?:v|t)\.aspx\?.*url=(.+?)(?:&|$)',
                          link['href'], re.I)
         if match is not None:
             link['href'] = urlfix.unquote_plus(match.group(1))
-            # print('REMOVED')
+            debug('CLEANED')
         else:
-            # print('NOTHING TO DO')
+            debug('NOTHING TO DO')
             pass
 
+        debug('Validating url . . . ', end='')
         if re.match(r'^##.+##$', link['href']) is None:
-            # print('Validating url . . . ', end='')
+            debug('Validating url . . . ', end='')
             url = re.sub(r'^##.+##', '', link['href'])
             info = cache.get_default().get_webpage(url)
             if 400 <= info.status < 600:
-                # print('BROKEN')
+                debug('MARKED BROKEN')
                 link.insert(0, '*BROKEN {:d}*'.format(info.status))
             else:
-                # print('NOTHING TO DO')
+                debug('VALID')
                 pass
+        else:
+            debug('VARIABLE NOT CHECKED')
+            pass
 
     def review(self):
         """Review the document for errors.
