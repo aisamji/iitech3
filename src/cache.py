@@ -25,10 +25,9 @@ def _adapt_datetime(py_value):
 
 
 sqlite3.register_converter('DATETIME', _convert_datetime)
-# TODO: BOOL converter is not working properly returns incorrect values.
-sqlite3.register_converter('BOOL', bool)
+sqlite3.register_converter('BOOL', lambda x: bool(int(x)))
 sqlite3.register_adapter(datetime.datetime, _adapt_datetime)
-# sqlite3 has a predefined adapter registered for bool to integer
+# Using sqlite3's builtin bool adapter
 
 
 def get_default():
