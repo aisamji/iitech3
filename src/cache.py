@@ -79,7 +79,8 @@ class Cache:
         Create, upgrade, or open a caching databse at the specified path.
         """
         db_path = str(db_path)
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        if db_path != ':memory:':
+            os.makedirs(os.path.dirname(db_path), exist_ok=True)
         self._database = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES)
         version = self._database.execute('PRAGMA user_version').fetchone()[0]
         if version < self.DB_VERSION:

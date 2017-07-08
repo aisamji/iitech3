@@ -20,7 +20,10 @@ class Document:
             with open(code, 'r') as markup:
                 data = markup.read()
             code = data
-        code = code.replace('“', '"', 2).replace('”', '"', 2)  # DOCTYPE fix for Ismaili Insight newsletter
+        # DOCTYPE fix for Ismaili Insight newsletter
+        code = code.replace(
+            '<!DOCTYPE HTML PUBLIC “-//W3C//DTD HTML 4.01 Transitional//EN” “http://www.w3.org/TR/html4/loose.dtd”>',
+            '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">')
         self._data = bs4.BeautifulSoup(code, 'html5lib')
 
     # BeautifulSoup Search helpers
@@ -29,7 +32,7 @@ class Document:
         """Determine whether a tag is a link that points to an external resource."""
         if tag.name != 'a' or tag.get('href') is None:
             return False
-        result = re.match(r'(?:##TrackClick##)?https?://(?:[a-z0-9]+\.)?[a-z0-9]+\.[a-z0-9]+|##.+##$',
+        result = re.match(r'(?:##TrackClick##)?https?://(?:[a-z0-9]+\.)?[a-z0-9]+\.[a-z0-9]+|##.+##$|$',
                           tag['href'], re.I)
         return result is not None
 
@@ -118,6 +121,8 @@ class Document:
     # display method
     def __str__(self):
         """Get the html code of the document."""
-        code = self._data.prettify().replace('"', '“', 1).replace('"', '”', 1)
-        code = code.replace('"', '“', 1).replace('"', '”', 1)
+        # DOCTYPE fix for Ismaili Insight newsletter
+        code = self._data.prettify().replace(
+            '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">',
+            '<!DOCTYPE HTML PUBLIC “-//W3C//DTD HTML 4.01 Transitional//EN” “http://www.w3.org/TR/html4/loose.dtd”>')
         return code
