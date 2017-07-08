@@ -90,3 +90,5 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(type(info.reason), str, 'The reason should be of type str.')
         self.assertEqual(type(info.last_lookup), datetime.datetime,
                          'The lookup time should be a datetime object.')
+        self.assertEqual(info.address, 'ali.samji@outlook.com', 'The address should be ali.samji@outlook.com')
+        self.assertEqual(info.is_valid, False, 'The validity should be False.')
