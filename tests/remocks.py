@@ -14,10 +14,10 @@ class Response:
         """Interpret the data as a json object."""
         return json.loads(self.text)
 
-    def __init__(self, url, text=''):
+    def __init__(self, url, text='', status_code=200):
         """Initialize the response object."""
         self.url = str(url)
-        self.status_code = 200
+        self.status_code = status_code
         self.text = str(text)
 
     def __str__(self):
@@ -40,12 +40,22 @@ class Response:
 responses = {
     'https://www.google.com':
         Response('https://www.google.com'),
-    'http://api.quickemailverification.com/v1/verify?email=richard@quickemailverification.com&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55':
-        Response('http://api.quickemailverification.com/v1/verify?email=richard@quickemailverification.com&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55',
+    'http://api.quickemailverification.com/v1/verify?email=richard@quickemailverification.com&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55':  # noqa
+        Response('http://api.quickemailverification.com/v1/verify?email=richard@quickemailverification.com&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55',  # noqa
                  '{"result":"invalid", "reason":"rejected_email", "disposable":"false", "accept_all":"false",'
                  '"role":"false", "email":"richard@quickemailverification.com", "user":"richard",'
                  '"domain":"quickemailverification.com", "safe_to_send":"false", "success":"true",'
-                 '"message":null}')
+                 '"message":null}'),
+    'http://api.quickemailverification.com/v1/verify?email=ali.samji@outlook.com&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55':  # noqa
+        Response('http://api.quickemailverification.com/v1/verify?email=ali.samji@outlook.com&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55',  #noqa
+                 '{"result":"valid", "reason":"accepted_email", "disposable":"false", "accept_all":"false",'
+                 '"role":"false", "email":"ali.samji@outlook.com", "user":"ali",'
+                 '"domain":"outlook.com", "safe_to_send":"true", "success":"true",'
+                 '"message":null}'),
+    'https://www.shitface.org':
+        Response('https://www.shitface.org', status_code=410),
+    'https://journeyforhealth.org':
+        Response('https://journeyforhealth.org')
     }
 
 
