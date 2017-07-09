@@ -1,5 +1,6 @@
 """Tests for the document class."""
 import unittest
+import re
 import remocks
 import cache
 import document
@@ -14,23 +15,25 @@ class DocumentTests(unittest.TestCase):
         """Confirm the review feature returns a document with the proper corrections."""
         markup = """
             <body>
-                <!-- External links -->
                 <a href="">REMOVE ME!</a>
                 <a href="##TRACKCLICK##">REMOVE ME!</a>
                 <a href="https://www.shitface.org" target="_self">TELL ME IM BROKEN!</a>
                 <a href="http://www.ismailiinsight.org/enewsletterpro/t.aspx?url=https%3A%2F%2Fjourneyforhealth.org"
-                   target="_self">CHANGE ME!</a>
-                <a href="https://www.google.com" target="_blank">DONT TOUCH ME!</a>
+                   target="_blank">CHANGE ME!</a>
+                <a href="##TRACKCLICK##https://www.google.com" target="_blank">DONT TOUCH ME!</a>
             </body>
             """
-
-        goal = ('<html>\n <head>\n </head>\n <body>\n  <!-- External links -->\n'
-                '  <a href="https://www.shitface.org" target="_blank">\n   *BROKEN 410*\n   TELL ME IM BROKEN!\n  </a>\n'
-                '  <a href="https://journeyforhealth.org" target="_blank">\n   CHANGE ME!\n  </a>\n'
-                '  <a href="https://www.google.com" target="_blank">\n   DONT TOUCH ME!\n  </a>\n'
-                ' </body>\n</html>')
 
         apple = document.Document(markup)
         apple.review()
 
-        self.assertEqual(goal, str(apple), 'The html code should be fixed to match the specified goal.')
+        self.assertIsNone(re.search(r'<a href="">\s*REMOVE ME!\s*</a>', str(apple)),
+                          'The blank link should be removed.')
+        self.assertIsNone(re.search(r'<a href="##TRACKCLICK##">\s*REMOVE ME!\s*</a>', str(apple)),
+                          'The useless tracker should be removed.')
+        self.assertIsNotNone(re.search(r'<a href="https://www\.shitface\.org" target="_blank">\s*\*BROKEN 410\*\s*TELL ME IM BROKEN!\s*</a>', str(apple)),
+                             'https://www.shitface.org should be marked broken and the target should be fixed.')
+        self.assertIsNotNone(re.search(r'<a href="https://journeyforhealth\.org" target="_blank">\s*CHANGE ME!\s*</a>', str(apple)),
+                             'Additional trackers should be removed.')
+        self.assertIsNotNone(re.search(r'<a href="##TRACKCLICK##https://www\.google\.com" target="_blank">\s*DONT TOUCH ME!\s*</a>', str(apple)),
+                             'A link should not be touched if it is correct.')
