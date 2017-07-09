@@ -1,6 +1,9 @@
 """Tests for the document class."""
 import unittest
+<<<<<<< HEAD
 import re
+=======
+>>>>>>> 4a6ae77800c0bab0c8b8f5188ffb6c0f7b642103
 import remocks
 import cache
 import document
