@@ -57,3 +57,22 @@ class DocumentTests(unittest.TestCase):
                              'A link to an existing anchor should not be changed.')
         self.assertIsNotNone(re.search(r'<a href="#waldo">\s*\*NOTFOUND waldo\*\s*WHERE IS WALDO\s*</a>', str(apple)),
                              'A non-existent link should be marked.')
+
+    @unittest.mock.patch('document.cache.requests', remocks)
+    @unittest.mock.patch('document.cache.get_default', return_value=cache.Cache(':memory:'))
+    def test_email_review(self, mock_default_cache):
+        """Confirm the review feature correctly fixes emails."""
+        markup = """
+            <body>
+                <a href="mailto:%20ali.samji@outlook.com">EXTRA SPACE</a>
+                <a href="mailto:richard@quickemailverification.com">FAKE EMAIL</a>
+            </body>
+        """
+
+        apple = document.Document(markup)
+        apple.review()
+
+        self.assertIsNotNone(re.search(r'<a href="mailto:ali\.samji@outlook\.com">\s*EXTRA SPACE\s*</a>', str(apple)),
+                             'Extra spaces should be stripped and the resulting email verified.')
+        self.assertIsNotNone(re.search(r'<a href="mailto:richard@quickemailverification\.com">\s*\*BAD rejected_email\*\s*FAKE EMAIL\s*</a>', str(apple)),
+                             'Bad emails should be marked as such.')
