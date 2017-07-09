@@ -1,9 +1,6 @@
 """Tests for the document class."""
 import unittest
-<<<<<<< HEAD
 import re
-=======
->>>>>>> 4a6ae77800c0bab0c8b8f5188ffb6c0f7b642103
 import remocks
 import cache
 import document
@@ -15,7 +12,7 @@ class DocumentTests(unittest.TestCase):
     @unittest.mock.patch('document.cache.requests', remocks)
     @unittest.mock.patch('document.cache.get_default', return_value=cache.Cache(':memory:'))
     def test_external_link_review(self, mock_default_cache):
-        """Confirm the review feature returns a document with the proper corrections."""
+        """Confirm the review feature correctly fixes external links."""
         markup = """
             <body>
                 <a href="">REMOVE ME!</a>
@@ -40,3 +37,23 @@ class DocumentTests(unittest.TestCase):
                              'Additional trackers should be removed.')
         self.assertIsNotNone(re.search(r'<a href="##TRACKCLICK##https://www\.google\.com" target="_blank">\s*DONT TOUCH ME!\s*</a>', str(apple)),
                              'A link should not be touched if it is correct.')
+
+    def test_internal_link_review(self):
+        """Confirm the review feature correctly fixes internal links."""
+        markup = """
+            <body>
+                <a name="northpole">WELCOME TO THE NORTHPOLE</a>
+                <a href="#northpole">WHERE IS SANTA CLAUS</a>
+                <a href="#waldo">WHERE IS WALDO</a>
+            </body>
+        """
+
+        apple = document.Document(markup)
+        apple.review()
+
+        self.assertIsNotNone(re.search(r'<a name="northpole">\s*WELCOME TO THE NORTHPOLE\s*</a>', str(apple)),
+                             'Anchors should not be touched, only counted.')
+        self.assertIsNotNone(re.search(r'<a href="#northpole">\s*WHERE IS SANTA CLAUS\s*</a>', str(apple)),
+                             'A link to an existing anchor should not be changed.')
+        self.assertIsNotNone(re.search(r'<a href="#waldo">\s*\*NOTFOUND waldo\*\s*WHERE IS WALDO\s*</a>', str(apple)),
+                             'A non-existent link should be marked.')
