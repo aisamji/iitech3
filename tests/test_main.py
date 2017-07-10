@@ -1,8 +1,11 @@
 """Tests to confirm the operation of the CLI."""
+import os
 import unittest
 from unittest import mock
+import pasteboard
 import main
 import cache
+import document
 
 
 class LookupTests(unittest.TestCase):
@@ -63,3 +66,41 @@ class LookupTests(unittest.TestCase):
 
         self._cache.lookup_webpage.assert_not_called()
         self._cache.get_webpage.assert_called_with('https://www.google.com', nolookup=True)
+
+
+class ReviewTests(unittest.TestCase):
+    """Confirm the operation of the review command."""
+
+    def setUp(self):
+        """Prepare the environment."""
+        self._document = mock.MagicMock(document.Document)
+        self._document.__str__.return_value = '<html></html>'
+        document_patcher = mock.patch('main.document.Document.__new__', return_value=self._document)
+        self.addCleanup(document_patcher.stop)
+        self.mock_document = document_patcher.start()
+
+    def test_review_pasteboard(self):
+        """Confirm that the code to be reviewed is retrieved from the pasteboard and put back on to it."""
+        code = '<html></html>'
+        pasteboard.set(code)
+        main.main('review -p'.split())
+
+        self.mock_document.assert_called_with(document.Document, code)
+        self.assertTrue(self._document.review.called, 'The document should be reviewed.')
+        self.assertEqual(code, pasteboard.get(),
+                         'The reviewed document should be put back on the pasteboard.')
+
+    def test_review_file(self):
+        """Confirm that the code to be reviewed is read from a file and written back to it."""
+        code = '<html></html>'
+        with open('fake.txt', 'w') as file:
+            file.write(code)
+        self.addCleanup(os.remove, 'fake.txt')
+        main.main('review fake.txt'.split())
+
+        with open('fake.txt', 'r') as file:
+            data = file.read()
+        self.mock_document.assert_called_with(document.Document, code)
+        self.assertTrue(self._document.review.called, 'The document should be reviewed.')
+        self.assertEqual(code, data,
+                         'The reviewed document should be written back to the file.')

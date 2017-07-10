@@ -16,9 +16,16 @@ def review(args):
     if args.file is None:
         code = pasteboard.get()
     else:
-        code = args.file.read()
+        with open(args.file, 'r') as file:
+            code = file.read()
     html_doc = document.Document(code)
     html_doc.review()
+
+    if args.file is None:
+        pasteboard.set(html_doc)
+    else:
+        with open(args.file, 'w') as file:
+            file.write(str(html_doc))
 
 
 def lookup_email(args):
@@ -60,10 +67,10 @@ def main(args=None):
     base_childs = base.add_subparsers()
 
     # Define review parser
-    review = base_childs.add_parser('review')
-    review.set_defaults(func=review)
-    review_target = review.add_mutually_exclusive_group(required=True)
-    review_target.add_argument('file', action='store', type=argparse.FileType('r'), nargs='?')
+    review_cmd = base_childs.add_parser('review')
+    review_cmd.set_defaults(func=review)
+    review_target = review_cmd.add_mutually_exclusive_group(required=True)
+    review_target.add_argument('file', action='store', type=str, nargs='?')
     review_target.add_argument('-p', '--pasteboard', action='store_const',
                                dest='file', const=None)
 
