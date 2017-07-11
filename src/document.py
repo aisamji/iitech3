@@ -165,8 +165,7 @@ class Document:
     def __str__(self):
         """Get the html code of the document."""
         # DOCTYPE fix for Ismaili Insight newsletter
-        code = self._data.encode('windows-1252').decode('windows-1252')
         code = re.sub(r'<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4\.01 Transitional//EN" "http://www\.w3\.org/TR/html4/loose\.dtd">',
                       '<!DOCTYPE HTML PUBLIC “-//W3C//DTD HTML 4.01 Transitional//EN” “http://www.w3.org/TR/html4/loose.dtd”>',
-                      code, flags=re.I)
+                      str(self._data), flags=re.I)
         return code
