@@ -1,9 +1,10 @@
 #! /usr/bin/env python3
 """The main script that serves as the program entry point."""
-
+# Metadata
 __author__ = 'Ali I Samji'
 __version__ = '0.1.0'
 
+# Imports
 import argparse
 from requests.status_codes import _codes as url_statuses
 import document
@@ -19,7 +20,20 @@ def review(args):
         with open(args.file, 'r') as file:
             code = file.read()
     html_doc = document.Document(code)
-    html_doc.review()
+    summary = html_doc.review()
+
+    print(
+        '{:d} blank links removed.'.format(summary['links']['removed']),
+        '{:d} misdirected links set to open in new window.'.format(summary['links']['retargetted']),
+        '{:d} double-tracked links decoded.'.format(summary['links']['decoded']),
+        '{:d} broken/unchecked links marked.'.format(summary['links']['marked']),
+
+        '{:d} links referencing missing anchors marked.'.format(summary['anchors']['marked']),
+
+        '{:d} emails cleaned.'.format(summary['emails']['cleaned']),
+        '{:d} invalid/unchecked emails marked.'.format(summary['emails']['marked']),
+        sep='\n'
+    )
 
     if args.file is None:
         pasteboard.set(html_doc)
