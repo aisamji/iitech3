@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 """The main script that serves as the program entry point."""
 # Metadata
+__title__ = 'iitech3'
 __author__ = 'Ali I Samji'
 __version__ = '0.1.0'
 
@@ -10,6 +11,22 @@ from requests.status_codes import _codes as url_statuses
 import document
 import pasteboard
 import cache
+
+# String Constants
+REVIEW_DESC = 'Review and fix the HTML code of the newsletter in-place.'
+LOOKUP_DESC = 'Lookup the status of an email or a url.'
+LOOKUP_EMAIL_DESC = 'Look up the status of an email.'
+LOOKUP_WEBPAGE_DESC = 'Look up the status of a webpage.'
+MARK_DESC = 'Manually mark the status of an email or a url.'
+MARK_EMAIL_DESC = 'Manually mark the status of an email.'
+MARK_WEBPAGE_DESC = 'Manually mark the status of a webpage.'
+HELP_HELP = 'Print this help message and exit.'
+PROG_NAME = __title__
+REVIEW_ACT = 'review'
+LOOKUP_ACT = 'lookup'
+MARK_ACT = 'mark'
+EMAIL_TYPE = 'email'
+WEBPAGE_TYPE = 'webpage'
 
 
 def review(args):
@@ -76,24 +93,24 @@ def mark_url(args):
 def main(args=None):
     """Run the program with the given args or from the cmd args."""
     # Define base parser
-    base = argparse.ArgumentParser(prog='iitech3',
+    base = argparse.ArgumentParser(prog=PROG_NAME,
                                    description='An HTML newsletter manipulation utility '
                                                'for the Ismaili Insight newsletter.',
                                    formatter_class=argparse.RawTextHelpFormatter,
                                    usage='%(prog)s -h|--help\n       '
                                          '%(prog)s -v|--version\n       '
-                                         '%(prog)s <command>')
+                                         '%(prog)s <action>')
     base._optionals.title = 'options'
     base.set_defaults(func=lambda x: base.print_help())
     base.add_argument('-v', '--version', action='version', version='%(prog)s {:s}'.format(__version__))
-    base_childs = base.add_subparsers(title='commands',
-                                      help='review\tReview and fix the HTML code of the newsletter in-place.\n'
-                                           'lookup\tLookup the status of an email or a url.\n'
-                                           'mark  \tManually mark the status of an email or a url.')
+    base_childs = base.add_subparsers(title='actions',
+                                      help='{:6s}\t{:s}\n'.format(REVIEW_ACT, REVIEW_DESC) +
+                                           '{:6s}\t{:s}\n'.format(LOOKUP_ACT, LOOKUP_DESC) +
+                                           '{:6s}\t{:s}'.format(MARK_ACT, MARK_DESC))
 
     # Define review parser
-    review_cmd = base_childs.add_parser('review', prog='iitech3 review',
-                                        description='Review and fix the HTML code of the newsletter in-place.',
+    review_cmd = base_childs.add_parser(REVIEW_ACT, prog='{:s} {:s}'.format(PROG_NAME, REVIEW_ACT),
+                                        description=REVIEW_DESC,
                                         usage='%(prog)s <file>\n       '
                                               '%(prog)s -p|--pasteboard')
     review_cmd._optionals.title = 'options'
@@ -107,19 +124,21 @@ def main(args=None):
                                    help='Specifies that the HTML code to review is on the pasteboard.')
 
     # Define lookup parser
-    lookup_cmd = base_childs.add_parser('lookup', prog='iitech3 lookup',
-                                        description='Lookup the status of an email or a url.',
+    lookup_cmd = base_childs.add_parser(LOOKUP_ACT, prog='{:s} {:s}'.format(PROG_NAME, LOOKUP_ACT),
+                                        description=LOOKUP_DESC,
                                         formatter_class=argparse.RawTextHelpFormatter,
-                                        usage='%(prog)s email [OPTIONS]\n       '
-                                              '%(prog)s webpage [OPTIONS]')
+                                        usage='%(prog)s {:s} [OPTIONS]\n       '.format(EMAIL_TYPE) +
+                                              '%(prog)s {:s} [OPTIONS]'.format(WEBPAGE_TYPE))
     lookup_cmd._optionals.title = 'options'
     lookup_cmd.set_defaults(func=lambda x: lookup_cmd.print_help())
     lookup_childs = lookup_cmd.add_subparsers(title='types',
-                                              help='email  \tLook up the status of an email.\n'
-                                                    'webpage\tLook up the status of a webpage.')
+                                              help='{:7s}\t{:s}\n'.format(EMAIL_TYPE, LOOKUP_EMAIL_DESC) +
+                                                    '{:7s}\t{:s}'.format(WEBPAGE_TYPE, LOOKUP_WEBPAGE_DESC))
 
-    lookup_email_cmd = lookup_childs.add_parser('email', prog='iitech3 lookup email', add_help=False,
-                                                description='Look up the status of an email.',
+    lookup_email_cmd = lookup_childs.add_parser(EMAIL_TYPE, prog='{:s} {:s} {:s}'.format(
+                                                    PROG_NAME, LOOKUP_ACT, EMAIL_TYPE),
+                                                add_help=False,
+                                                description=LOOKUP_EMAIL_DESC,
                                                 usage='%(prog)s [-c|--cached] <address>\n       '
                                                       '%(prog)s -f|--forced <address>')
     lookup_email_cmd.set_defaults(func=lookup_email)
@@ -133,10 +152,12 @@ def main(args=None):
     lookup_email_gen_grp.add_argument('address', action='store', type=str,
                                       help='The email address to lookup.')
     lookup_email_gen_grp.add_argument('-h', '--help', action='help',
-                                      help='Print this help message and exit.')
+                                      help=HELP_HELP)
 
-    lookup_url_cmd = lookup_childs.add_parser('webpage', prog='iitech3 lookup webpage', add_help=False,
-                                              description='Look up the status of a webpage.',
+    lookup_url_cmd = lookup_childs.add_parser(WEBPAGE_TYPE, prog='{:s} {:s} {:s}'.format(
+                                                  PROG_NAME, LOOKUP_ACT, WEBPAGE_TYPE),
+                                              add_help=False,
+                                              description=LOOKUP_WEBPAGE_DESC,
                                               usage='%(prog)s [-c|--cached] <url>\n       '
                                                     '%(prog)s -f|--forced <url>')
     lookup_url_cmd.set_defaults(func=lookup_url)
@@ -150,22 +171,24 @@ def main(args=None):
     lookup_url_gen_grp.add_argument('url', action='store', type=str,
                                     help='The url to lookup.')
     lookup_url_gen_grp.add_argument('-h', '--help', action='help',
-                                    help='Print this help message and exit.')
+                                    help=HELP_HELP)
 
     # Define mark parser
-    mark_cmd = base_childs.add_parser('mark', prog='iitech3 mark',
+    mark_cmd = base_childs.add_parser(MARK_ACT, prog='{:s} {:s}'.format(PROG_NAME, MARK_ACT),
                                       formatter_class=argparse.RawTextHelpFormatter,
-                                      description='Manually mark the status of an email or a url.',
-                                      usage='%(prog)s email [OPTIONS]\n       '
-                                            '%(prog)s webpage [OPTIONS]')
+                                      description=MARK_DESC,
+                                      usage='%(prog)s {:s} [OPTIONS]\n       '.format(EMAIL_TYPE) +
+                                            '%(prog)s {:s} [OPTIONS]'.format(WEBPAGE_TYPE))
     mark_cmd._optionals.title = 'arguments'
     mark_cmd.set_defaults(func=lambda x: mark_cmd.print_help())
     mark_childs = mark_cmd.add_subparsers(title='types',
-                                          help='email  \tManually mark the status of an email.\n'
-                                               'webpage\tManually mark the status of a webpage.')
+                                          help='{:7s}\t{:s}\n'.format(EMAIL_TYPE, MARK_EMAIL_DESC) +
+                                               '{:7s}\t{:s}'.format(WEBPAGE_TYPE, MARK_WEBPAGE_DESC))
 
-    mark_email_cmd = mark_childs.add_parser('email', prog='iitech3 mark email', add_help=False,
-                                            description='Manually mark the status of an email.',
+    mark_email_cmd = mark_childs.add_parser(EMAIL_TYPE, prog='{:s} {:s} {:s}'.format(
+                                                PROG_NAME, MARK_ACT, EMAIL_TYPE),
+                                            add_help=False,
+                                            description=MARK_EMAIL_DESC,
                                             usage='%(prog)s --valid <address>\n       '
                                                   '%(prog)s --invalid <address>')
     mark_email_cmd.set_defaults(func=mark_email)
@@ -179,10 +202,12 @@ def main(args=None):
     mark_email_gen_grp.add_argument('address', action='store', type=str,
                                     help='The address to mark.')
     mark_email_gen_grp.add_argument('-h', '--help', action='help',
-                                    help='Print this help message and exit.')
+                                    help=HELP_HELP)
 
-    mark_url_cmd = mark_childs.add_parser('webpage', prog='iitech3 mark webpage', add_help=False,
-                                          description='Manually mark the status of a webpage.',
+    mark_url_cmd = mark_childs.add_parser(WEBPAGE_TYPE, prog='{:s}'.format(
+                                              PROG_NAME, MARK_ACT, WEBPAGE_TYPE),
+                                          add_help=False,
+                                          description=MARK_WEBPAGE_DESC,
                                           usage='%(prog)s -s|--status STATUS <url>\n       '
                                                 '%(prog)s -k|--ok <url>\n       '
                                                 '%(prog)s -b|--bad <url>\n       '
@@ -203,7 +228,7 @@ def main(args=None):
     mark_url_gen_grp = mark_url_cmd.add_argument_group(title='arguments')
     mark_url_gen_grp.add_argument('url', action='store', type=str, help='The url to mark.')
     mark_url_gen_grp.add_argument('-h', '--help', action='help',
-                                  help='Print this help message and exit.')
+                                  help=HELP_HELP)
 
     # Parse args
     definition = base.parse_args(args)
