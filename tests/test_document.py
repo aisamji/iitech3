@@ -66,7 +66,7 @@ class DocumentTests(unittest.TestCase):
                                  str(apple)),
                              'A link to an existing anchor should not be changed.')
         self.assertIsNotNone(re.search(
-                                 r'<a href="#waldo">\s*\*NOTFOUND waldo\*\s*WHERE IS WALDO\s*</a>',
+                                 r'<a href="#waldo">\s*\*MISSING waldo\*\s*WHERE IS WALDO\s*</a>',
                                  str(apple)),
                              'A non-existent link should be marked.')
 
@@ -89,6 +89,6 @@ class DocumentTests(unittest.TestCase):
                                  str(apple)),
                              'Extra spaces should be stripped and the resulting email verified.')
         self.assertIsNotNone(re.search(
-                                 r'<a href="mailto:richard@quickemailverification\.com">\s*\*BAD rejected_email\*\s*FAKE EMAIL\s*</a>', # noqa
+                                 r'<a href="mailto:richard@quickemailverification\.com">\s*\*INVALID rejected_email\*\s*FAKE EMAIL\s*</a>', # noqa
                                  str(apple)),
                              'Bad emails should be marked as such.')

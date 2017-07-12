@@ -109,7 +109,7 @@ class Document:
         name = link['href'][1:]  # strip off the leading '#'
         if name not in anchors:
             result['marked'] = 1
-            link.insert(0, '*NOTFOUND {:s}*'.format(name))
+            link.insert(0, '*MISSING {:s}*'.format(name))
 
         return result
 
@@ -131,7 +131,7 @@ class Document:
 
         if not info.is_valid:
             result['marked'] = 1
-            email.insert(0, '*BAD {:s}*'.format(info.reason))
+            email.insert(0, '*INVALID {:s}*'.format(info.reason))
 
         return result
 
