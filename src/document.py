@@ -81,7 +81,9 @@ class Document:
         if re.match(r'^##.+##$', link['href']) is None:
             url = re.sub(r'^##.+##', '', link['href'])  # strip off the ##TRACKCLICK## if applicable
             info = cache.get_default().get_webpage(url)
-            if 400 <= info.status < 600:
+            if info.status == 403:
+                link.insert(0, '*UNCHECKED*')
+            elif 400 <= info.status < 600:
                 link.insert(0, '*BROKEN {:d}*'.format(info.status))
 
     def _fix_internal_link(self, link, anchors):
@@ -103,7 +105,10 @@ class Document:
 
         info = cache.get_default().get_email(address)
         if not info.is_valid:
-            email.insert(0, '*BAD {:s}*'.format(info.reason))
+            if info.reason == 'accepted_email':
+                email.insert(0, '*UNCHECKED*')
+            else:
+                email.insert(0, '*BAD {:s}*'.format(info.reason))
 
     def review(self):
         """Review the document for errors.
