@@ -1,9 +1,5 @@
-#! /usr/bin/env python3
+#! /usr/local/bin/python3
 """The main script that serves as the program entry point."""
-# Metadata
-__title__ = 'iitech3'
-__author__ = 'Ali I Samji'
-__version__ = '0.1.0'
 
 # Imports
 import argparse
@@ -11,6 +7,7 @@ from requests.status_codes import _codes as url_statuses
 import document
 import pasteboard
 import cache
+import version
 
 # String Constants
 REVIEW_DESC = 'Review and fix the HTML code of the newsletter in-place.'
@@ -21,7 +18,7 @@ MARK_DESC = 'Manually mark the status of an email or a url.'
 MARK_EMAIL_DESC = 'Manually mark the status of an email.'
 MARK_WEBPAGE_DESC = 'Manually mark the status of a webpage.'
 HELP_HELP = 'Print this help message and exit.'
-PROG_NAME = __title__
+PROG_NAME = version.__title__
 REVIEW_ACT = 'review'
 LOOKUP_ACT = 'lookup'
 MARK_ACT = 'mark'
@@ -94,15 +91,14 @@ def main(args=None):
     """Run the program with the given args or from the cmd args."""
     # Define base parser
     base = argparse.ArgumentParser(prog=PROG_NAME,
-                                   description='An HTML newsletter manipulation utility '
-                                               'for the Ismaili Insight newsletter.',
+                                   description=version.__description__,
                                    formatter_class=argparse.RawTextHelpFormatter,
                                    usage='%(prog)s -h|--help\n       '
                                          '%(prog)s -v|--version\n       '
                                          '%(prog)s <action>')
     base._optionals.title = 'options'
     base.set_defaults(func=lambda x: base.print_help())
-    base.add_argument('-v', '--version', action='version', version='%(prog)s {:s}'.format(__version__))
+    base.add_argument('-v', '--version', action='version', version='%(prog)s {:s}'.format(version.__version__))
     base_childs = base.add_subparsers(title='actions',
                                       help='{:6s}\t{:s}\n'.format(REVIEW_ACT, REVIEW_DESC) +
                                            '{:6s}\t{:s}\n'.format(LOOKUP_ACT, LOOKUP_DESC) +
