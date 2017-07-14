@@ -47,7 +47,7 @@ responses = {
                  '"domain":"quickemailverification.com", "safe_to_send":"false", "success":"true",'
                  '"message":null}'),
     'http://api.quickemailverification.com/v1/verify?email=ali.samji@outlook.com&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55':  # noqa
-        Response('http://api.quickemailverification.com/v1/verify?email=ali.samji@outlook.com&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55',  #noqa
+        Response('http://api.quickemailverification.com/v1/verify?email=ali.samji@outlook.com&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55',  # noqa
                  '{"result":"valid", "reason":"accepted_email", "disposable":"false", "accept_all":"false",'
                  '"role":"false", "email":"ali.samji@outlook.com", "user":"ali",'
                  '"domain":"outlook.com", "safe_to_send":"true", "success":"true",'

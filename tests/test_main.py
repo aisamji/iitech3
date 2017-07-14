@@ -75,6 +75,26 @@ class ReviewTests(unittest.TestCase):
         """Prepare the environment."""
         self._document = mock.MagicMock(document.Document)
         self._document.__str__.return_value = '<html></html>'
+        self._document.review.return_value = {
+            'links':
+                {
+                    'removed': 0,
+                    'retargetted': 0,
+                    'decoded': 0,
+                    'broken': 0,
+                    'unchecked': 0
+                },
+            'anchors':
+                {
+                    'marked': 0
+                },
+            'emails':
+                {
+                    'cleaned': 0,
+                    'invalid': 0,
+                    'unchecked': 0
+                }
+            }
         document_patcher = mock.patch('main.document.Document.__new__', return_value=self._document)
         self.addCleanup(document_patcher.stop)
         self.mock_document = document_patcher.start()
