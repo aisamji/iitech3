@@ -4,6 +4,7 @@ import argparse
 import os
 import stat
 import re
+import pip
 
 # Since this will be a CLI program and not a python library, we will not be using distutils
 
@@ -46,6 +47,8 @@ REPAIRS = [
 # Action functions
 def install():
     """Install iitech3 on this system."""
+    pip.main("install requests==2.13.0".split())
+    pip.main("install beautifulsoup4==4.5.3".split())
     os.makedirs(LIB_DIR, exist_ok=True)
     for f in SRC_FILES:
         fix_and_copy(f, LIB_DIR, REPAIRS)
