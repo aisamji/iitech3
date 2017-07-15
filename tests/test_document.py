@@ -26,6 +26,7 @@ class DocumentTests(unittest.TestCase):
 
         apple = document.Document(markup)
         apple.review()
+        code = str(apple)
 
         self.assertIsNone(re.search(r'<a href="">\s*REMOVE ME!\s*</a>', str(apple)),
                           'The blank link should be removed.')
@@ -33,15 +34,15 @@ class DocumentTests(unittest.TestCase):
                           'The useless tracker should be removed.')
         self.assertIsNotNone(re.search(
                                  r'<a href="https://www\.shitface\.org" target="_blank">\s*\*BROKEN 410\*\s*TELL ME IM BROKEN!\s*</a>', # noqa
-                                 str(apple)),
+                                 code),
                              'https://www.shitface.org should be marked broken and the target should be fixed.')
         self.assertIsNotNone(re.search(
                                  r'<a href="https://journeyforhealth\.org" target="_blank">\s*CHANGE ME!\s*</a>',
-                                 str(apple)),
+                                 code),
                              'Additional trackers should be removed.')
         self.assertIsNotNone(re.search(
                                  r'<a href="##TRACKCLICK##https://www\.google\.com" target="_blank">\s*DONT TOUCH ME!\s*</a>', # noqa
-                                 str(apple)),
+                                 code),
                              'A link should not be touched if it is correct.')
 
     def test_internal_link_review(self):
@@ -56,18 +57,19 @@ class DocumentTests(unittest.TestCase):
 
         apple = document.Document(markup)
         apple.review()
+        code = str(apple)
 
         self.assertIsNotNone(re.search(
                                  r'<a name="northpole">\s*WELCOME TO THE NORTHPOLE\s*</a>',
-                                 str(apple)),
+                                 code),
                              'Anchors should not be touched, only counted.')
         self.assertIsNotNone(re.search(
                                  r'<a href="#northpole">\s*WHERE IS SANTA CLAUS\s*</a>',
-                                 str(apple)),
+                                 code),
                              'A link to an existing anchor should not be changed.')
         self.assertIsNotNone(re.search(
                                  r'<a href="#waldo">\s*\*MISSING waldo\*\s*WHERE IS WALDO\s*</a>',
-                                 str(apple)),
+                                 code),
                              'A non-existent link should be marked.')
 
     @unittest.mock.patch('document.cache.requests', remocks)
@@ -83,12 +85,33 @@ class DocumentTests(unittest.TestCase):
 
         apple = document.Document(markup)
         apple.review()
+        code = str(apple)
 
         self.assertIsNotNone(re.search(
                                  r'<a href="mailto:ali\.samji@outlook\.com">\s*EXTRA SPACE\s*</a>',
-                                 str(apple)),
+                                 code),
                              'Extra spaces should be stripped and the resulting email verified.')
         self.assertIsNotNone(re.search(
                                  r'<a href="mailto:richard@quickemailverification\.com">\s*\*INVALID rejected_email\*\s*FAKE EMAIL\s*</a>', # noqa
-                                 str(apple)),
+                                 code),
                              'Bad emails should be marked as such.')
+
+    def test_repair(self):
+        """Confirm the repair feature correctly fixes bugs afflicting the document."""
+        markup = """
+            <body>
+                <style>THIS IS VALID CSS</style>
+                <a href="ismailinsight.org">FIX THE TYPO</a>
+            </body>
+        """
+
+        apple = document.Document(markup)
+        apple.repair()
+        code = str(apple)
+
+        self.assertIsNone(re.search(r'<style>\s*THIS IS VALID CSS\s*</style>', code),
+                          'All style tags should be removed.')
+        self.assertIsNotNone(re.search(r'<a href="ismailiinsight\.org">\s*FIX THE TYPO\s*</a>', code),
+                             'The typographical error in ismailinsight.org should be corrected.')
+        self.assertIsNotNone(re.search(r'<body>\s*<div style="background-color: #595959;">', code),
+                             'The div tag for the gray background should be automatically added.')

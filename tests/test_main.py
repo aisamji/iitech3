@@ -68,8 +68,8 @@ class LookupTests(unittest.TestCase):
         self._cache.get_webpage.assert_called_with('https://www.google.com', nolookup=True)
 
 
-class ReviewTests(unittest.TestCase):
-    """Confirm the operation of the review command."""
+class ManipulationTests(unittest.TestCase):
+    """A test suite to confirm the operation of the review/repair commands."""
 
     def setUp(self):
         """Prepare the environment."""
@@ -95,12 +95,17 @@ class ReviewTests(unittest.TestCase):
                     'unchecked': 0
                 }
             }
+        self._document.repair.return_value = {
+            'typos': 0,
+            'styles': 0,
+            'background': 0
+        }
         document_patcher = mock.patch('main.document.Document.__new__', return_value=self._document)
         self.addCleanup(document_patcher.stop)
         self.mock_document = document_patcher.start()
 
     def test_review_pasteboard(self):
-        """Confirm that the code to be reviewed is retrieved from the pasteboard and put back on to it."""
+        """Confirm that the code to be reviewed is retrieved from the pasteboard and put back on it."""
         code = '<html></html>'
         pasteboard.set(code)
         main.main('review -p'.split())
@@ -124,3 +129,29 @@ class ReviewTests(unittest.TestCase):
         self.assertTrue(self._document.review.called, 'The document should be reviewed.')
         self.assertEqual(code, data,
                          'The reviewed document should be written back to the file.')
+
+    def test_repair_pasteboard(self):
+        """Confirm that the code to be repaired iretrieved from the pasteboard and put back on it."""
+        code = '<html></html>'
+        pasteboard.set(code)
+        main.main('repair -p'.split())
+
+        self.mock_document.assert_called_with(document.Document, code)
+        self.assertTrue(self._document.repair.called, 'The document should be repaired.')
+        self.assertEqual(code, pasteboard.get(),
+                         'The repaired document should be put back on the pasteboard.')
+
+    def test_repair_file(self):
+        """Confirm that the code to be repaired is read from a file and written back to it."""
+        code = '<html></html>'
+        with open('fake.txt', 'w') as file:
+            file.write(code)
+        self.addCleanup(os.remove, 'fake.txt')
+        main.main('repair fake.txt'.split())
+
+        with open('fake.txt', 'r') as file:
+            data = file.read()
+        self.mock_document.assert_called_with(document.Document, code)
+        self.assertTrue(self._document.repair.called, 'The document should be repaired.')
+        self.assertEqual(code, data,
+                         'The repaired document should be written back to the file.')
