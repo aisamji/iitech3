@@ -146,9 +146,11 @@ class Document:
 
     # public methods
     def review(self):
-        """Review the document for correctness.
+        """Review the document for accuracy before sending it out.
 
-        Ensure that all external links open in a new window.
+        Ensure accuracy of all hyperlinks.
+        Ensure accuracy of all anchors.
+        Ensure accuracy of all mailto links.
         """
         result = {
             'links': Counter(),
@@ -172,7 +174,7 @@ class Document:
         return result
 
     def repair(self):
-        """Repair the document for any errors/bugs/typos/etc.
+        """Repair the document for any errors/bugs/typos/etc that are preventing it from loading correctly.
 
         Correct typo in ismailinsight.org.
         Remove all style tags.
