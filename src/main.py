@@ -10,20 +10,24 @@ import cache
 import version
 
 # String Constants
-REVIEW_DESC = 'Review and fix the HTML code of the newsletter in-place.'
+PROG_NAME = version.__title__
+HELP_HELP = 'Print this help message and exit.'
+
+REVIEW_ACT = 'review'
+REVIEW_DESC = 'Review the HTML template for correctness before sending it out.'
+REPAIR_ACT = 'repair'
+REPAIR_DESC = "Repair the HTML template if it isn't loading correctly."
+
+EMAIL_TYPE = 'email'
+WEBPAGE_TYPE = 'webpage'
+LOOKUP_ACT = 'lookup'
 LOOKUP_DESC = 'Lookup the status of an email or a url.'
 LOOKUP_EMAIL_DESC = 'Look up the status of an email.'
 LOOKUP_WEBPAGE_DESC = 'Look up the status of a webpage.'
+MARK_ACT = 'mark'
 MARK_DESC = 'Manually mark the status of an email or a url.'
 MARK_EMAIL_DESC = 'Manually mark the status of an email.'
 MARK_WEBPAGE_DESC = 'Manually mark the status of a webpage.'
-HELP_HELP = 'Print this help message and exit.'
-PROG_NAME = version.__title__
-REVIEW_ACT = 'review'
-LOOKUP_ACT = 'lookup'
-MARK_ACT = 'mark'
-EMAIL_TYPE = 'email'
-WEBPAGE_TYPE = 'webpage'
 
 
 def review(args):
@@ -48,6 +52,30 @@ def review(args):
         '{:d} emails cleaned.'.format(summary['emails']['cleaned']),
         '{:d} invalid emails marked.'.format(summary['emails']['invalid']),
         '{:d} unchecked emails marked.'.format(summary['emails']['unchecked']),
+        sep='\n'
+    )
+
+    if args.file is None:
+        pasteboard.set(html_doc)
+    else:
+        with open(args.file, 'w') as file:
+            file.write(str(html_doc))
+
+
+def repair(args):
+    """Perform a repair operation specified by the given arguments."""
+    if args.file is None:
+        code = pasteboard.get()
+    else:
+        with open(args.file, 'r') as file:
+            code = file.read()
+    html_doc = document.Document(code)
+    summary = html_doc.repair()
+
+    print(
+        '{:d} typographical errors in ismailinsight.org corrected.'.format(summary['typos']),
+        '{:d} style tags removed.'.format(summary['styles']),
+        'Background fix {:s}applied.'.format('not ' if summary['background'] == 0 else ''),
         sep='\n'
     )
 
@@ -103,6 +131,7 @@ def main(args=None):
     base.add_argument('-v', '--version', action='version', version='%(prog)s {:s}'.format(version.__version__))
     base_childs = base.add_subparsers(title='actions',
                                       help='{:6s}\t{:s}\n'.format(REVIEW_ACT, REVIEW_DESC) +
+                                           '{:6s}\t{:s}\n'.format(REPAIR_ACT, REPAIR_DESC) +
                                            '{:6s}\t{:s}\n'.format(LOOKUP_ACT, LOOKUP_DESC) +
                                            '{:6s}\t{:s}'.format(MARK_ACT, MARK_DESC))
 
@@ -120,6 +149,21 @@ def main(args=None):
     review_target_mex.add_argument('-p', '--pasteboard', action='store_const',
                                    dest='file', const=None,
                                    help='Specifies that the HTML code to review is on the pasteboard.')
+
+    # Define repair parser
+    repair_cmd = base_childs.add_parser(REPAIR_ACT, prog=' '.join([PROG_NAME, REPAIR_ACT]),
+                                        description=REPAIR_DESC,
+                                        usage='%(prog)s <file>\n       '
+                                              '%(prog)s -p|--pasteboard')
+    repair_cmd._optionals.title = 'options'
+    repair_cmd.set_defaults(func=repair)
+    repair_target_grp = repair_cmd.add_argument_group(title='targets')
+    repair_target_mex = repair_target_grp.add_mutually_exclusive_group(required=True)
+    repair_target_mex.add_argument('file', action='store', type=str, nargs='?',
+                                   help='The file that contains the HTML code to repair.')
+    repair_target_mex.add_argument('-p', '--pasteboard', action='store_const',
+                                   dest='file', const=None,
+                                   help='Specifies that the HTML code to repair is on the pasteboard.')
 
     # Define lookup parser
     lookup_cmd = base_childs.add_parser(LOOKUP_ACT, prog='{:s} {:s}'.format(PROG_NAME, LOOKUP_ACT),
