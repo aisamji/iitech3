@@ -144,8 +144,9 @@ class Document:
                 email.insert(0, '*INVALID {:s}*'.format(info.reason))
         return result
 
+    # public methods
     def review(self):
-        """Review the document for errors.
+        """Review the document for correctness.
 
         Ensure that all external links open in a new window.
         """
@@ -170,7 +171,38 @@ class Document:
 
         return result
 
-    # display method
+    def repair(self):
+        """Repair the document for any errors/bugs/typos/etc.
+
+        Correct typo in ismailinsight.org.
+        Remove all style tags.
+        Ensure that the background of the document is gray.
+        """
+        result = {
+            'typos': 0,
+            'styles': 0,
+            'background': 0
+        }
+
+        code = str(self._data)
+        code, result['typos'] = re.subn(r'ismailinsight\.org', 'ismailiinsight.org', code, flags=re.I)
+        self._data = bs4.BeautifulSoup(code, 'html5lib')
+
+        for tag in self._data.find_all('style'):
+            result['styles'] += 1
+            tag.decompose()
+
+        first_body_child = self._data.body.contents[0]
+        if first_body_child.name != 'div' or first_body_child['style'] != 'background-color: #595959;':
+            result['background'] = 1
+            div = self._data.new_tag('div', style='background-color: #595959;')
+            for tag in self._data.body.contents:
+                div.append(tag.extract())
+            self._data.body.append(div)
+
+        return result
+
+    # magic methods
     def __str__(self):
         """Get the html code of the document."""
         # DOCTYPE fix for Ismaili Insight newsletter

@@ -95,3 +95,23 @@ class DocumentTests(unittest.TestCase):
                                  r'<a href="mailto:richard@quickemailverification\.com">\s*\*INVALID rejected_email\*\s*FAKE EMAIL\s*</a>', # noqa
                                  code),
                              'Bad emails should be marked as such.')
+
+    def test_repair(self):
+        """Confirm the repair feature correctly fixes bugs afflicting the document."""
+        markup = """
+            <body>
+                <style>THIS IS VALID CSS</style>
+                <a href="ismailinsight.org">FIX THE TYPO</a>
+            </body>
+        """
+
+        apple = document.Document(markup)
+        apple.repair()
+        code = str(apple)
+
+        self.assertIsNone(re.search(r'<style>\s*THIS IS VALID CSS\s*</style>', code),
+                          'All style tags should be removed.')
+        self.assertIsNotNone(re.search(r'<a href="ismailiinsight\.org">\s*FIX THE TYPO\s*</a>', code),
+                             'The typographical error in ismailinsight.org should be corrected.')
+        self.assertIsNotNone(re.search(r'<body>\s*<div style="background-color: #595959;">', code),
+                             'The div tag for the gray background should be automatically added.')
