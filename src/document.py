@@ -30,34 +30,9 @@ class Document:
 
     # BeautifulSoup Search helpers
     @staticmethod
-    def _is_external_link(tag):
-        """Determine whether a tag is a link that points to an external resource."""
-        if tag.name != 'a' or tag.get('href') is None:
-            return False
-        result = re.match(r'(?:##TrackClick##)?https?://(?:[a-z0-9]+\.)?[a-z0-9]+\.[a-z0-9]+|##.+##$|$',
-                          tag['href'], re.I)
-        return result is not None
-
-    @staticmethod
-    def _is_internal_link(tag):
-        """Determine whether a tag is link that refers to an anchor in the document."""
-        if tag.name != 'a' or tag.get('href') is None:
-            return False
-        result = re.match(r'#(?!#)', tag['href'])
-        return result is not None
-
-    @staticmethod
     def _is_anchor(tag):
         """Determine whether a tag creates a new anchor in the document."""
         return tag.name == 'a' and tag.get('name') is not None
-
-    @staticmethod
-    def _is_email(tag):
-        """Determine whether a tag is a mailto link."""
-        if tag.name != 'a' or tag.get('href') is None:
-            return False
-        result = re.match(r'mailto:', tag['href'], re.I)
-        return result is not None
 
     # review method and helpers
     def _fix_external_link(self, link):
@@ -155,16 +130,25 @@ class Document:
             'emails': Counter()
         }
 
-        external_links = self._data.find_all(self._is_external_link)
+        external_links = self._data.find_all(
+            'a',
+            href=re.compile(r'^(?:##TrackClick##)?https?://(?:[a-z0-9]+\.)?[a-z0-9]+\.[a-z0-9]+|^##.+##$|^$', re.I)
+        )
         for link in external_links:
             result['links'] += Counter(self._fix_external_link(link))
 
         anchors = [a['name'] for a in self._data.find_all(self._is_anchor)]
-        internal_links = self._data.find_all(self._is_internal_link)
+        internal_links = self._data.find_all(
+            'a',
+            href=re.compile(r'^#(?!#)')
+        )
         for link in internal_links:
             result['anchors'] += Counter(self._fix_internal_link(link, anchors))
 
-        emails = self._data.find_all(self._is_email)
+        emails = self._data.find_all(
+            'a',
+            href=re.compile(r'^mailto:', re.I)
+        )
         for email in emails:
             result['emails'] += Counter(self._fix_email(email))
 
