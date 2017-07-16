@@ -24,6 +24,9 @@ class ReviewTests(unittest.TestCase):
             <body>
                 <!-- Untouchables -->
                 <a class="good" href="https://www.google.com" target="_blank">GOOD HYPERLINK</a>
+                <a class="anchor" name="northpole">COUNTED ANCHOR</a>
+                <a class="found" href="#northpole">GOOD JUMP</a>
+                <a class="valid" href="mailto:ali.samji@outlook.com">GOOD EMAIL</a>
 
                 <!-- Useless Hyperlinks -->
                 <a class="useless" href="">BLANK LINK</a>
@@ -42,26 +45,39 @@ class ReviewTests(unittest.TestCase):
                 <!-- Misguided Hyperlinks -->
                 <a class="untargetted" href="https://www.google.com">UNTARGETTED HYPERLINK</a>
                 <a class="mistargetted" href="https://www.google.com" target="_self">MISTARGETTED HYPERLINK</a>
+
+                <!-- Bad Jump Links -->
+                <a class="missing" href="#waldo">BAD JUMP</a>
+
+                <!-- Bad Emails -->
+                <a class="accept-all" href="mailto:lcc@usaji.org">UNCHECKABLE EMAIL</a>
+                <a class="invalid" href="mailto:richard@quickemailverification.com">INVALID EMAIL</a>
+
+                <!-- Dirty Emails -->
+                <a class="dirty" href="mailto:%20ali.samji%20@outlook.com">DIRTY EMAIL</a>
             </body>
         """
 
         self.apple = document.Document(markup)
         self.good_hyperlink = self.apple._data.find('a', class_='good')
+        self.good_anchor = self.apple._data.find('a', class_="anchor")
+        self.good_jump = self.apple._data.find('a', class_="found")
+        self.good_email = self.apple._data.find('a', class_="valid")
         self.apple.review()
 
     def test_useless_hyperlinks(self):
         """Confirm that all useless hyperlinks are removed."""
-        for l in self.apple._data.find_all(class_='useless'):
-            self.assertIsNone(l, 'Useless hyperlinks should be removed.')
+        self.assertEqual(0, len(self.apple._data.find_all(class_='useless')),
+                         'Useless hyperlinks should be removed.')
         self.assertIsNotNone(self.good_hyperlink,
                              'Useful hyperlinks should not be removed.')
 
     def test_hyperlink_marking(self):
         """Confirm that hyperlinks are marked correctly."""
-        self.assertIsNotNone(self.apple._data.find(class_='broken'),
-                             'Broken hyperlinks should be marked *BROKEN <code>*.')
-        self.assertIsNotNone(self.apple._data.find('a', class_='unchecked'),
-                             "Hyperlinks that cannot be checked should be marked *UNCHECKED*")
+        self.assertEqual('*BROKEN 410*', self.apple._data.find(class_='broken').contents[0].string,
+                         'Broken hyperlinks should be marked *BROKEN <code>*.')
+        self.assertEqual('*UNCHECKED*', self.apple._data.find('a', class_='unchecked').contents[0].string,
+                         "Hyperlinks that cannot be checked should be marked *UNCHECKED*")
         self.assertEqual('GOOD HYPERLINK', self.good_hyperlink.text,
                          'Hyperlinks that are valid should not be marked at all.')
 
@@ -75,8 +91,8 @@ class ReviewTests(unittest.TestCase):
     def test_hyperlink_target_correction(self):
         """Confirm that all hyperlinks are set to open in a new window."""
         links = [
-            self.apple._data.find('a', text='UNTARGETTED HYPERLINK'),
-            self.apple._data.find('a', text='MISTARGETTED HYPERLINK'),
+            self.apple._data.find('a', class_='untargetted'),
+            self.apple._data.find('a', class_='mistargetted'),
             self.good_hyperlink
         ]
         self.assertTrue(links[0].has_attr('target'),
@@ -87,62 +103,28 @@ class ReviewTests(unittest.TestCase):
 
     def test_jump_link_marking(self):
         """Confirm that all jump links are marked if they refer to a non-exsiting jump point."""
-        markup = """
-            <body>
-                <a name="northpole">WELCOME TO THE NORTHPOLE</a>
-                <a href="#northpole">WHERE IS SANTA CLAUS</a>
-                <a href="#waldo">WHERE IS WALDO</a>
-            </body>
-        """
-
-        apple = document.Document(markup)
-        apple.review()
-
-        links = apple._data.find_all('a')
-        self.assertEqual('WELCOME TO THE NORTHPOLE', links[0].text,
+        self.assertEqual('COUNTED ANCHOR', self.good_anchor.text,
                          'Anchors (ie jump points) should not be modified, only counted.')
-        self.assertEqual('WHERE IS SANTA CLAUS', links[1].text,
+        self.assertEqual('GOOD JUMP', self.good_jump.text,
                          'Working jump links should not be modified.')
-        self.assertEqual('*MISSING waldo*WHERE IS WALDO', links[2].text,
+        self.assertEqual('*MISSING waldo*BAD JUMP', self.apple._data.find('a', class_='missing').text,
                          'Broken jump links should be marked.')
 
     def test_email_cleaning(self):
         """Confirm that emails are cleaned if necessary."""
-        markup = """
-            <body>
-                <a href="mailto:%20ali.samji%20@outlook.com">CLEAN ME :)</a>
-                <a href="mailto:ali.samji@outlook.com">HANASE</a>
-            </body>
-        """
-
-        apple = document.Document(markup)
-        apple.review()
-
-        links = apple._data.find_all('a')
-        self.assertEqual('mailto:ali.samji@outlook.com', links[0]['href'],
-                         'Emails with %20 characters in them should be cleaned.')
-        self.assertEqual('mailto:ali.samji@outlook.com', links[1]['href'],
-                         'Emails that do not need to be cleaned should not be modified.')
+        self.assertEqual('mailto:ali.samji@outlook.com', self.apple._data.find('a', class_="dirty")['href'],
+                         'Dirty emails should be cleaned.')
+        self.assertEqual('mailto:ali.samji@outlook.com', self.good_email['href'],
+                         'Emails that do not need to be should not be modified.')
 
     def test_email_marking(self):
         """Confirm that emails are marked correctly."""
-        markup = """
-            <body>
-                <a href="mailto:lcc@usaji.org">CANT CHECK ME</a>
-                <a href="mailto:richard@quickemailverification.com">FAKE EMAIL</a>
-                <a href="mailto:ali.samji@outlook.com">ILL BE GOOD, I PROMISE</a>
-            </body>
-        """
-
-        apple = document.Document(markup)
-        apple.review()
-
-        self.assertEqual('*UNCHECKED*CANT CHECK ME', apple._data.find('a', href='mailto:lcc@usaji.org').text,
-                         "Emails that can't be checked should be marked as such.")
-        self.assertEqual('*INVALID rejected_email*FAKE EMAIL',
-                         apple._data.find('a', href='mailto:richard@quickemailverification.com').text,
+        self.assertEqual('*UNCHECKED*', self.apple._data.find('a', class_="accept-all").contents[0].string,
+                         "Emails that cannot be checked should be marked as such.")
+        self.assertEqual('*INVALID rejected_email*',
+                         self.apple._data.find('a', class_="invalid").contents[0].string,
                          'Emails that are invalid should be marked as such.')
-        self.assertEqual('ILL BE GOOD, I PROMISE', apple._data.find('a', href='mailto:ali.samji@outlook.com').text,
+        self.assertEqual('GOOD EMAIL', self.good_email.contents[0].string,
                          'Emails that are valid should not be marked.')
 
 
