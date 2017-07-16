@@ -1,6 +1,7 @@
 """Tests for the document class."""
 import unittest
 import re
+import bs4
 import remocks
 import cache
 import document
@@ -96,22 +97,85 @@ class DocumentTests(unittest.TestCase):
                                  code),
                              'Bad emails should be marked as such.')
 
-    def test_repair(self):
-        """Confirm the repair feature correctly fixes bugs afflicting the document."""
+
+class RepairTests(unittest.TestCase):
+    """Test suite for the repair function."""
+
+    def setUp(self):
+        """Prepare the environment."""
+        pass
+
+    def test_do_nothing(self):
+        """Confirm whether the code is not modified unnecessarily."""
         markup = """
-            <body>
-                <style>THIS IS VALID CSS</style>
-                <a href="ismailinsight.org">FIX THE TYPO</a>
-            </body>
+            <html>
+                <head>
+                </head>
+                <body>
+                    <div style="background-color: #595959;">
+                        <a href="https://www.ismailiinsight.com">NOTHING SHOULD BE CHANGED</a>
+                    </div>
+                </body>
+            </html>
         """
 
         apple = document.Document(markup)
         apple.repair()
-        code = str(apple)
 
-        self.assertIsNone(re.search(r'<style>\s*THIS IS VALID CSS\s*</style>', code),
-                          'All style tags should be removed.')
-        self.assertIsNotNone(re.search(r'<a href="ismailiinsight\.org">\s*FIX THE TYPO\s*</a>', code),
-                             'The typographical error in ismailinsight.org should be corrected.')
-        self.assertIsNotNone(re.search(r'<body>\s*<div style="background-color: #595959;">', code),
-                             'The div tag for the gray background should be automatically added.')
+        banana = bs4.BeautifulSoup(markup, 'html5lib')
+        self.assertEqual(banana, apple._data, 'The code should not be changed if it is already correct.')
+
+    def test_remove_styles(self):
+        """Confirm that the code is stripped of all style tags."""
+        markup = """
+            <html>
+                <head>
+                    <style>THIS IS VALID CSS</style>
+                    <style>THIS IS ALSO VALID CSS</style>
+                    <style>THIS IS NOT VALID CSS</style>
+                </head>
+            </html>
+        """
+
+        apple = document.Document(markup)
+        apple.repair()
+
+        self.assertEqual(0, len(apple._data.find_all('style')), 'All style tags should be removed.')
+
+    def test_website_typo(self):
+        """Confirm that the code corrects the typographical error in ismailinsight.org."""
+        markup = """
+            <html>
+                <body>
+                    <a href="https://www.ismailinsight.org">FIX THE TYPO</a>
+                </body>
+            </html>
+        """
+
+        apple = document.Document(markup)
+        apple.repair()
+
+        self.assertEqual("https://www.ismailiinsight.org", apple._data.a['href'],
+                         'The typographical error in ismailinsight.org should be fixed.')
+
+    def test_gray_background(self):
+        """Confirm that the code adds in the gray background if it has been removed."""
+        markup = """
+            <html>
+                <body>
+                    <span>MOVE ME</span>
+                </body>
+            </html>
+        """
+
+        apple = document.Document(markup)
+        apple.repair()
+
+        self.assertIsNone(apple._data.body.find('span', recursive=False),
+                          'The span tag should have been removed from the body tag.')
+        div_tag = apple._data.body.find('div', recursive=False)
+        self.assertTrue(div_tag is not None and div_tag['style'] == 'background-color: #595959;',
+                        'The div tag should have been added to the body tag.')
+        span_tag = apple._data.body.div.span
+        self.assertTrue(span_tag is not None and span_tag.string == 'MOVE ME',
+                        'The span tag should have been moved to the div tag.')

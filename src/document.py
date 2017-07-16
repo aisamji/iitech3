@@ -178,12 +178,12 @@ class Document:
             result['styles'] += 1
             tag.decompose()
 
-        first_body_child = self._data.body.contents[0]
-        if first_body_child.name != 'div' or first_body_child['style'] != 'background-color: #595959;':
+        div_child = self._data.body.find('div', recursive=False)
+        if div_child is None or div_child['style'] != 'background-color: #595959;':
             result['background'] = 1
             div = self._data.new_tag('div', style='background-color: #595959;')
-            for tag in self._data.body.contents:
-                div.append(tag.extract())
+            for i in range(len(self._data.body.contents)):
+                div.append(self._data.body.contents[0].extract())
             self._data.body.append(div)
 
         return result
