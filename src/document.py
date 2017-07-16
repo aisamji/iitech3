@@ -38,7 +38,7 @@ class Document:
     def _fix_external_link(self, link):
         """Fix an 'a' tag that references an external resource.
 
-        Confirm that the 'a' tag does not have an empty link.
+        Confirm that the 'a' tag is not useless.
         Confirm that the 'a' tag is set to open in a new window.
         Confirm that the 'a' tag does not have an existing tracking link.
         Confirm that the 'a' tag has a valid link.
@@ -50,7 +50,7 @@ class Document:
             'broken': 0,
             'unchecked': 0
         }
-        if link['href'] in ('##TrackClick##', ''):
+        if link['href'] in ('##TrackClick##', '') or re.search(r'^\s*$', link.text) is not None:
             result['removed'] = 1
             link.decompose()
             return result
@@ -81,11 +81,18 @@ class Document:
     def _fix_internal_link(self, link, anchors):
         """Fix an 'a' tag that references an anchor in the document.
 
+        Confirm that the 'a' tag is not useless.
         Confirm that the 'a' tag refers to an existing anchor.
         """
         result = {
+            'removed': 0,
             'marked': 0
         }
+        if re.search(r'^\s*$', link.text) is not None:
+            result['removed'] = 1
+            link.decompose()
+            return result
+
         name = link['href'][1:]  # strip off the leading '#'
         if name not in anchors:
             result['marked'] = 1
@@ -96,14 +103,21 @@ class Document:
     def _fix_email(self, email):
         """Fix an 'a' tag that composes an email.
 
+        Confirm that the 'a' tag is not useless.
         Confirm that the 'a' tag has a valid email.
         Confirm that the 'a' tag does not have extra spaces (ie %20).
         """
         result = {
             'invalid': 0,
             'cleaned': 0,
-            'unchecked': 0
+            'unchecked': 0,
+            'removed': 0
         }
+        if re.search(r'^\s*$', email.text) is not None:
+            result['removed'] = 1
+            email.decompose()
+            return result
+
         if re.search(r'%20', email['href']) is not None:
             result['cleaned'] = 1
             email['href'] = re.sub(r'%20', '', email['href'])
