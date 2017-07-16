@@ -52,10 +52,18 @@ responses = {
                  '"role":"false", "email":"ali.samji@outlook.com", "user":"ali",'
                  '"domain":"outlook.com", "safe_to_send":"true", "success":"true",'
                  '"message":null}'),
+    'http://api.quickemailverification.com/v1/verify?email=lcc@usaji.org&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55':  # noqa
+        Response('http://api.quickemailverification.com/v1/verify?email=lcc@usaji.org&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55',  # noqa
+                 '{"result":"valid", "reason":"accepted_email", "disposable":"false", "accept_all":"true",'
+                 '"role":"false", "email":"lcc@usaji.com", "user":"lcc",'
+                 '"domain":"usaji.com", "safe_to_send":"false", "success":"true",'
+                 '"message":null}'),
     'https://www.shitface.org':
         Response('https://www.shitface.org', status_code=410),
     'https://journeyforhealth.org':
-        Response('https://journeyforhealth.org')
+        Response('https://journeyforhealth.org'),
+    'https://www.akfusa.org':
+        Response('https://www.akfusa.org', status_code=403)
     }
 
 

@@ -97,6 +97,7 @@ class Document:
         """Fix an 'a' tag that composes an email.
 
         Confirm that the 'a' tag has a valid email.
+        Confirm that the 'a' tag does not have extra spaces (ie %20).
         """
         result = {
             'invalid': 0,
