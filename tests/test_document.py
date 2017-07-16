@@ -1,5 +1,6 @@
 """Tests for the document class."""
 import unittest
+from unittest import mock
 import re
 import bs4
 import remocks
@@ -9,42 +10,6 @@ import document
 
 class DocumentTests(unittest.TestCase):
     """Test suite for the Document class."""
-
-    @unittest.mock.patch('document.cache.requests', remocks)
-    @unittest.mock.patch('document.cache.get_default', return_value=cache.Cache(':memory:'))
-    def test_external_link_review(self, mock_default_cache):
-        """Confirm the review feature correctly fixes external links."""
-        markup = """
-            <body>
-                <a href="">REMOVE ME!</a>
-                <a href="##TRACKCLICK##">REMOVE ME!</a>
-                <a href="https://www.shitface.org" target="_self">TELL ME IM BROKEN!</a>
-                <a href="http://www.ismailiinsight.org/enewsletterpro/t.aspx?url=https%3A%2F%2Fjourneyforhealth.org"
-                   target="_blank">CHANGE ME!</a>
-                <a href="##TRACKCLICK##https://www.google.com" target="_blank">DONT TOUCH ME!</a>
-            </body>
-            """
-
-        apple = document.Document(markup)
-        apple.review()
-        code = str(apple)
-
-        self.assertIsNone(re.search(r'<a href="">\s*REMOVE ME!\s*</a>', str(apple)),
-                          'The blank link should be removed.')
-        self.assertIsNone(re.search(r'<a href="##TRACKCLICK##">\s*REMOVE ME!\s*</a>', str(apple)),
-                          'The useless tracker should be removed.')
-        self.assertIsNotNone(re.search(
-                                 r'<a href="https://www\.shitface\.org" target="_blank">\s*\*BROKEN 410\*\s*TELL ME IM BROKEN!\s*</a>', # noqa
-                                 code),
-                             'https://www.shitface.org should be marked broken and the target should be fixed.')
-        self.assertIsNotNone(re.search(
-                                 r'<a href="https://journeyforhealth\.org" target="_blank">\s*CHANGE ME!\s*</a>',
-                                 code),
-                             'Additional trackers should be removed.')
-        self.assertIsNotNone(re.search(
-                                 r'<a href="##TRACKCLICK##https://www\.google\.com" target="_blank">\s*DONT TOUCH ME!\s*</a>', # noqa
-                                 code),
-                             'A link should not be touched if it is correct.')
 
     def test_internal_link_review(self):
         """Confirm the review feature correctly fixes internal links."""
@@ -96,6 +61,96 @@ class DocumentTests(unittest.TestCase):
                                  r'<a href="mailto:richard@quickemailverification\.com">\s*\*INVALID rejected_email\*\s*FAKE EMAIL\s*</a>', # noqa
                                  code),
                              'Bad emails should be marked as such.')
+
+
+class ExternalLinkTests(unittest.TestCase):
+    """A test suite to test the review function."""
+
+    def setUp(self):
+        """Prepare the environment."""
+        request_patcher = mock.patch('document.cache.requests', remocks)
+        cache_patcher = mock.patch('document.cache.get_default', return_value=cache.Cache(':memory:'))
+        self.addCleanup(request_patcher.stop)
+        self.addCleanup(cache_patcher.stop)
+
+        request_patcher.start()
+        self.mock_default = cache_patcher.start()
+
+    def test_useless_links(self):
+        """Confirm that only all useless links are removed."""
+        markup = """
+            <body>
+                <a href="">BLANK LINK</a>
+                <a href="##TrackClick##">POINTLESS TRACKER</a>
+                <a href="https://www.google.com">USEFUL LINK</a>
+            </body>
+        """
+
+        apple = document.Document(markup)
+        apple.review()
+
+        self.assertEqual(1, len(apple._data.find_all('a')), 'All useless links should be removed.')
+        self.assertEqual('USEFUL LINK', apple._data.body.a.string, 'Useful links should not be touched.')
+
+    def test_link_marking(self):
+        """Confirm that links are marked correctly."""
+        markup = """
+            <body>
+                <a href="https://www.shitface.org">GIVE ME 410</a>
+                <a href="https://www.akfusa.org">CANT CHECK ME</a>
+                <a href="https://www.google.com">UNTOUCHABLE</a>
+            </body>
+        """
+
+        apple = document.Document(markup)
+        apple.review()
+
+        links = apple._data.find_all('a')
+        self.assertEqual('*BROKEN 410*GIVE ME 410', links[0].text, 'Broken links should be marked *BROKEN <code>*.')
+        self.assertEqual('*UNCHECKED*CANT CHECK ME', links[1].text,
+                         "Links that cannot be checked should be marked *UNCHECKED*")
+        self.assertEqual('UNTOUCHABLE', links[2].text, 'Links that are valid should not be marked at all.')
+
+    def test_link_decoding(self):
+        """Confirm that a doubly-tracked link is decoded correctly."""
+        markup = """
+            <body>
+                <a href="http://www.ismailiinsight.org/enewsletterpro/t.aspx?url=https%3A%2F%2Fjourneyforhealth.org">
+                    DECODE ME
+                </a>
+                <a href="https://journeyforhealth.org">LEAVE ME ALONE</a>
+            </body>
+        """
+
+        apple = document.Document(markup)
+        apple.review()
+
+        links = apple._data.body.find_all('a')
+        self.assertEqual('https://journeyforhealth.org', links[0]['href'],
+                         'Doubly-tracked links should have their trackers removed and be decoded.')
+        self.assertEqual('https://journeyforhealth.org', links[1]['href'],
+                         'Singly-tracked links should be left alone.')
+
+    def test_target_correction(self):
+        """Confirm that all links are set to open in a new window."""
+        markup = """
+            <body>
+                <a href="https://www.google.com">GIVE ME A TARGET</a>
+                <a href="https://www.google.com" target="_self">DIRECT ME</a>
+                <a href="https://www.google.com" target="_blank">IM THE GOOD ONE</a>
+            </body>
+        """
+
+        apple = document.Document(markup)
+        apple.review()
+
+        links = apple._data.body.find_all('a')
+        self.assertTrue(links[0].get('target') is not None and links[0]['target'] == '_blank',
+                        'Links missing a target attribute should have it created and set to _blank.')
+        self.assertTrue(links[1]['target'] == '_blank',
+                        'Links with an incorrect target should have it changed to _blank.')
+        self.assertTrue(links[2]['target'] == '_blank',
+                        'Links that have a correct target attribute should not be changed.')
 
 
 class RepairTests(unittest.TestCase):

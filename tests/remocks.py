@@ -55,7 +55,9 @@ responses = {
     'https://www.shitface.org':
         Response('https://www.shitface.org', status_code=410),
     'https://journeyforhealth.org':
-        Response('https://journeyforhealth.org')
+        Response('https://journeyforhealth.org'),
+    'https://www.akfusa.org':
+        Response('https://www.akfusa.org', status_code=403)
     }
 
 
