@@ -31,6 +31,7 @@ class ReviewTests(unittest.TestCase):
                 <!-- Useless Hyperlinks -->
                 <a class="useless" href="">BLANK LINK</a>
                 <a class="useless" href="##TrackClick##">POINTLESS TRACKER</a>
+                <a class="useless" href="https://www.google.com"></a>
 
                 <!-- Bad Hyperlinks -->
                 <a class="broken" href="https://www.shitface.org">BROKEN HYPERLINK</a>
@@ -49,12 +50,18 @@ class ReviewTests(unittest.TestCase):
                 <!-- Bad Jump Links -->
                 <a class="missing" href="#waldo">BAD JUMP</a>
 
+                <!-- Useless Jump Links -->
+                <a class="useless-jump" href="#pert1"></a>
+
                 <!-- Bad Emails -->
                 <a class="accept-all" href="mailto:lcc@usaji.org">UNCHECKABLE EMAIL</a>
                 <a class="invalid" href="mailto:richard@quickemailverification.com">INVALID EMAIL</a>
 
                 <!-- Dirty Emails -->
                 <a class="dirty" href="mailto:%20ali.samji%20@outlook.com">DIRTY EMAIL</a>
+
+                <!-- Useless Emails -->
+                <a class="useless-email" href="mailto:ali.samji@outlook.com"></a>
             </body>
         """
 
@@ -101,6 +108,13 @@ class ReviewTests(unittest.TestCase):
             self.assertEqual('_blank', l['target'],
                              'All links should be set to open in a new window.')
 
+    def test_useless_jump_link(self):
+        """Confirm that useless jump links are removed."""
+        self.assertIsNone(self.apple._data.find('a', class_='useless-jump'),
+                          'Useless jump links should be removed.')
+        self.assertIsNotNone(self.good_jump,
+                             'Useful jump links should not be removed.')
+
     def test_jump_link_marking(self):
         """Confirm that all jump links are marked if they refer to a non-exsiting jump point."""
         self.assertEqual('COUNTED ANCHOR', self.good_anchor.text,
@@ -109,6 +123,13 @@ class ReviewTests(unittest.TestCase):
                          'Working jump links should not be modified.')
         self.assertEqual('*MISSING waldo*BAD JUMP', self.apple._data.find('a', class_='missing').text,
                          'Broken jump links should be marked.')
+
+    def test_useless_emails(self):
+        """Confirm that useless emails are removed."""
+        self.assertIsNone(self.apple._data.find('a', class_='useless-email'),
+                          'Useless emails should be removed.')
+        self.assertIsNotNone(self.good_email,
+                             'Useful emails should not be removed.')
 
     def test_email_cleaning(self):
         """Confirm that emails are cleaned if necessary."""
