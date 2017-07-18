@@ -2,6 +2,7 @@
 import unittest
 from unittest import mock
 import bs4
+import yaml
 import remocks
 import cache
 import document
