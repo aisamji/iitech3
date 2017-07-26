@@ -7,6 +7,7 @@ from requests.status_codes import _codes as url_statuses
 import document
 import pasteboard
 import cache
+import exceptions
 import version
 
 # String Constants
@@ -91,9 +92,12 @@ def lookup_email(args):
     db = cache.get_default()
     if args.forced:
         db.lookup_email(args.address)
-    info = db.get_email(args.address, nolookup=args.cached)
-    print('{!r:} is {:s}valid: {:s}.'.format(info.address, '' if info.is_valid else 'in',
-                                             info.reason))
+    try:
+        info = db.get_email(args.address, nolookup=args.cached)
+        print('{!r:} is {:s}valid: {:s}.'.format(info.address, '' if info.is_valid else 'in',
+                                                 info.reason))
+    except exceptions.CacheMissException:
+        print('{!r:} is not in the cache.'.format(args.address))
 
 
 def lookup_url(args):
@@ -101,8 +105,11 @@ def lookup_url(args):
     db = cache.get_default()
     if args.forced:
         db.lookup_webpage(args.url)
-    info = db.get_webpage(args.url, nolookup=args.cached)
-    print('{!r:} reports {:s}.'.format(info.url, url_statuses[info.status][0]))
+    try:
+        info = db.get_webpage(args.url, nolookup=args.cached)
+        print('{!r:} reports {:s}.'.format(info.url, url_statuses[info.status][0]))
+    except exceptions.CacheMissException:
+        print('{!r:} is not in the cache.'.format(args.url))
 
 
 def mark_email(args):
