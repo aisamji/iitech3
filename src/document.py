@@ -203,6 +203,10 @@ class Document:
 
         return result
 
+    def apply(self, transforms):
+        """Apply a transformation to the document (eg make all national changes to the document)."""
+        return transforms
+
     # magic methods
     def __str__(self):
         """Get the html code of the document."""

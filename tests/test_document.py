@@ -1,6 +1,7 @@
 """Tests for the document class."""
 import unittest
 from unittest import mock
+import os
 import bs4
 import yaml
 import remocks
@@ -231,3 +232,31 @@ class RepairTests(unittest.TestCase):
         span_tag = apple._data.body.div.span
         self.assertTrue(span_tag is not None and span_tag.string == 'MOVE ME',
                         'The span tag should have been moved to the div tag.')
+
+
+class TransformTests(unittest.TestCase):
+    """A test suite for the apply method."""
+
+    def setUp(self):
+        """Prepare the environment before executing each test."""
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(current_dir, 'files/original.html'), 'r', encoding='UTF-8') as file:
+            self._work_doc = document.Document(file.read())
+        with open(os.path.join(current_dir, 'files/transform.yml'), 'r') as file:
+            self._remaining = self._work_doc.apply(yaml.load(file))
+        with open(os.path.join(current_dir, 'files/done.html'), 'r', encoding='UTF-8') as file:
+            self._done_doc = document.Document(file.read())
+
+    def test_front(self):
+        """Confirm that the new front image and caption is applied on the boilerplate picture."""
+        working_image = self._work_doc._data.find('img', class_='front-image')
+        working_caption = self._work_doc._data.find('div', class_='front-caption')
+        final_image = self._done_doc._data.find('img', class_='front-image')
+        final_caption = self._done_doc._data.find('div', class_='front-caption')
+
+        self.assertNotIn('front', self._remaining,
+                         'The front transform should have been marked as applied.')
+        self.assertEqual(final_image, working_image,
+                         'The front image should have been transformed to the new one.')
+        self.assertEqual(final_caption, working_caption,
+                         'The front caption should have been transformed to the new one.')
