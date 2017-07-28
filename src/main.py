@@ -31,14 +31,28 @@ MARK_EMAIL_DESC = 'Manually mark the status of an email.'
 MARK_WEBPAGE_DESC = 'Manually mark the status of a webpage.'
 
 
+def get_code(path):
+    """Read in the code from the specified file or the pasteboard."""
+    if path is None:
+        return pasteboard.get()
+    else:
+        with open(path, 'r', encoding='UTF-8') as file:
+            code = file.read()
+        return code
+
+
+def set_code(path, doc):
+    """Write the Document to the specified file or the pasteboard."""
+    if path is None:
+        pasteboard.set(doc)
+    else:
+        with open(path, 'w', encoding='UTF-8') as file:
+            file.write(str(doc))
+
+
 def review(args):
     """Perform a review operation specified by the given arguments."""
-    if args.file is None:
-        code = pasteboard.get()
-    else:
-        with open(args.file, 'r') as file:
-            code = file.read()
-    html_doc = document.Document(code)
+    html_doc = document.Document(get_code(args.file))
     summary = html_doc.review()
 
     print(
@@ -55,22 +69,12 @@ def review(args):
         '{:d} unchecked emails marked.'.format(summary['emails']['unchecked']),
         sep='\n'
     )
-
-    if args.file is None:
-        pasteboard.set(html_doc)
-    else:
-        with open(args.file, 'w') as file:
-            file.write(str(html_doc))
+    set_code(args.file, html_doc)
 
 
 def repair(args):
     """Perform a repair operation specified by the given arguments."""
-    if args.file is None:
-        code = pasteboard.get()
-    else:
-        with open(args.file, 'r') as file:
-            code = file.read()
-    html_doc = document.Document(code)
+    html_doc = document.Document(get_code(args.file))
     summary = html_doc.repair()
 
     print(
@@ -79,12 +83,7 @@ def repair(args):
         'Background fix {:s}applied.'.format('not ' if summary['background'] == 0 else ''),
         sep='\n'
     )
-
-    if args.file is None:
-        pasteboard.set(html_doc)
-    else:
-        with open(args.file, 'w') as file:
-            file.write(str(html_doc))
+    set_code(args.file, html_doc)
 
 
 def lookup_email(args):
