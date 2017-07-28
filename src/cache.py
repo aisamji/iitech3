@@ -99,11 +99,15 @@ class Cache:
         Find the url online an get the status and store it in the cache.
         """
         url = str(url)
-        response = requests.get(url)
+        try:
+            response = requests.get(url)
+            status_code = response.status_code
+            response.close()
+        except requests.exceptions.ConnectionError:
+            status_code = 410
         self._database.execute(self.WEBPAGE_SET_STATEMENT,
-                               (url, response.status_code, datetime.datetime.today()))
+                               (url, status_code, datetime.datetime.today()))
         self._database.commit()
-        response.close()
 
     def get_webpage(self, url, *, nolookup=False):
         """Get the status of the given url.

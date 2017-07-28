@@ -53,6 +53,13 @@ class BranchTests(unittest.TestCase):
         remocks.get.assert_called_with(cache.Cache.EMAIL_API_ENDPOINT.format(
             'richard@quickemailverification.com'))
 
+    @unittest.mock.patch('cache.requests', remocks)
+    def test_url_gone(self):
+        """Confirm that a url that is gone returns 410."""
+        info = self._cache.get_webpage('https://www.jubileeconcerts.ismaili')
+        self.assertEqual(410, info.status,
+                         'The status should be 410 if the webpage does not exist.')
+
 
 class DatabaseTests(unittest.TestCase):
     """A test suite to confirm the communication of the caching database."""
