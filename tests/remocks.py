@@ -1,6 +1,7 @@
 """A mock of the requests library."""
 from unittest import mock
 import json
+from requests import exceptions
 
 
 class Response:
@@ -63,12 +64,18 @@ responses = {
     'https://journeyforhealth.org':
         Response('https://journeyforhealth.org'),
     'https://www.akfusa.org':
-        Response('https://www.akfusa.org', status_code=403)
+        Response('https://www.akfusa.org', status_code=403),
+    'https://www.jubileeconcerts.ismaili':
+        exceptions.ConnectionError()
     }
 
 
 def _get(url):
-    return responses[url]
+    result = responses[url]
+    if isinstance(result, Exception):
+        raise result
+    else:
+        return result
 
 
 get = mock.Mock(side_effect=_get)
