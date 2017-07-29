@@ -2,6 +2,7 @@
 import unittest
 from unittest import mock
 import os
+import re
 import bs4
 import yaml
 import remocks
@@ -250,13 +251,17 @@ class TransformTests(unittest.TestCase):
     def test_front(self):
         """Confirm that the new front image and caption is applied on the boilerplate picture."""
         working_image = self._work_doc._data.find('img', class_='front-image')
-        working_caption = self._work_doc._data.find('div', class_='front-caption')
         final_image = self._done_doc._data.find('img', class_='front-image')
+
+        # Get both captions and convert long runs of whitespace into a single space(chr 32).
+        working_caption = self._work_doc._data.find('div', class_='front-caption')
+        working_caption = re.sub(r'\s+', ' ', str(working_caption))
         final_caption = self._done_doc._data.find('div', class_='front-caption')
+        final_caption = re.sub(r'\s+', ' ', str(final_caption))
 
         self.assertNotIn('front', self._remaining,
                          'The front transform should have been marked as applied.')
-        self.assertEqual(final_image, working_image,
+        self.assertEqual(str(final_image), str(working_image),
                          'The front image should have been transformed to the new one.')
         self.assertEqual(final_caption, working_caption,
                          'The front caption should have been transformed to the new one.')

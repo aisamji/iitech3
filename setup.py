@@ -50,6 +50,8 @@ def install():
     pip.main("install requests==2.13.0".split())
     pip.main("install beautifulsoup4==4.5.3".split())
     pip.main("install PyYAML==3.12".split())
+    pip.main("install Pillow==4.1.0".split())
+
     os.makedirs(LIB_DIR, exist_ok=True)
     for f in SRC_FILES:
         fix_and_copy(f, LIB_DIR, REPAIRS)

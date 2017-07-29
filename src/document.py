@@ -3,8 +3,10 @@ import re
 import os
 from collections import Counter
 import bs4
-from requests import compat as urlfix
+import requests
+from PIL import Image
 import cache
+import exceptions
 
 
 # The review method should eventually . . .
@@ -63,7 +65,7 @@ class Document:
                          link['href'], re.I)
         if match is not None:
             result['decoded'] = 1
-            link['href'] = urlfix.unquote_plus(match.group(1))
+            link['href'] = requests.compat.unquote_plus(match.group(1))
 
         if re.match(r'^##.+##$', link['href']) is None:
             url = re.sub(r'^##.+##', '', link['href'])  # strip off the ##TRACKCLICK## if applicable
@@ -133,6 +135,43 @@ class Document:
                 result['invalid'] = 1
                 email.insert(0, '*INVALID {:s}*'.format(info.reason))
         return result
+
+    def _get_image_details(self, image_url):
+        """Get the proper source, height and width of the image specified by the given partial url."""
+        class RequestReader:
+            def __init__(self, request_object):
+                self._object = request_object
+
+            def read(self):
+                return self._object.content
+
+        base_url = 'https://ismailiinsight.org/eNewsletterPro/uploadedimages/000001/'
+        source = image_url if image_url.startswith('http') else (base_url + image_url)
+        data = Image.open(RequestReader(requests.get(source)))
+        return {
+            'source': source,
+            'width': data.width,
+            'height': data.height
+        }
+
+    def _set_contents(self, parent_tag, content_list):
+        """Convert the content_list to proper HTML and enclose with the given parent_tag."""
+        parent_tag.clear()
+        for item in content_list:
+            if isinstance(item, dict):
+                if 'link' in item:
+                    link_tag = self._data.new_tag('a',
+                                                  href=item['link'],
+                                                  target='_blank')
+                    try:
+                        link_tag.string = item['text']
+                    except KeyError:
+                        link_tag.string = item['link']
+                    parent_tag.append(link_tag)
+                else:
+                    raise exceptions.MissingTransformKey(item, ['link'])
+            else:
+                parent_tag.append(str(item) + '\n')
 
     # public methods
     def review(self):
@@ -205,6 +244,16 @@ class Document:
 
     def apply(self, transforms):
         """Apply a transformation to the document (eg make all national changes to the document)."""
+        if 'front' in transforms:
+            front_image = self._data.find('img', src=re.compile('^https://www\.ismailiinsight\.org/enewsletterpro/public_templates/IsmailiInsight/images/20121101Top_1\.jpg$|National')) # noqa
+            front_caption = front_image.parent.div
+
+            image_data = self._get_image_details(transforms['front']['image'])
+            front_image['src'] = image_data['source']
+            front_image['width'] = image_data['width']
+            front_image['height'] = image_data['height']
+            self._set_contents(front_caption, transforms['front']['caption'])
+            del transforms['front']
         return transforms
 
     # magic methods
