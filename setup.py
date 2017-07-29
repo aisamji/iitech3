@@ -48,7 +48,9 @@ else:
 DEPENDENCIES = [
     'requests==2.13.0',
     'beautifulsoup4==4.5.3',
-    'html5lib==0.999999999'
+    'html5lib==0.999999999',
+    'PyYAML==3.12',
+    'Pillow==4.1.0'
 ]
 SRC_FILES = [os.path.join('src/', name) for name in os.listdir('src/') if os.path.splitext(name)[1] == '.py']
 REPAIRS = [
@@ -105,6 +107,7 @@ def refresh(args):
     for d in DEPENDENCIES:
         pip.main('install {:s}'.format(d).split())
     print('Copying program library.')
+
     os.makedirs(LIB_DIR, exist_ok=True)
     for f in SRC_FILES:
         fix_and_copy(f, LIB_DIR, REPAIRS)

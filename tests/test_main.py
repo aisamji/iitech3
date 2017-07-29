@@ -132,5 +132,5 @@ class BugTests(unittest.TestCase):
 
     def test_file_encoding(self):
         """Confirm that the reading from a file selects the correct encoding."""
-        main.get_code(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'files/doc.html'))
+        main.get_code(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'files/original.html'))
         # This should not throw an error
