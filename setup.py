@@ -47,7 +47,8 @@ else:
 
 DEPENDENCIES = [
     'requests==2.13.0',
-    'beautifulsoup4==4.5.3'
+    'beautifulsoup4==4.5.3',
+    'html5lib==0.999999999'
 ]
 SRC_FILES = [os.path.join('src/', name) for name in os.listdir('src/') if os.path.splitext(name)[1] == '.py']
 REPAIRS = [
