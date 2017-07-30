@@ -1,6 +1,7 @@
 """A mock of the requests library."""
 from unittest import mock
 import json
+import os
 from requests import exceptions
 
 
@@ -15,11 +16,17 @@ class Response:
         """Interpret the data as a json object."""
         return json.loads(self.text)
 
-    def __init__(self, url, text='', status_code=200):
+    def __init__(self, url, data_file=None, status_code=200):
         """Initialize the response object."""
         self.url = str(url)
         self.status_code = status_code
-        self.text = str(text)
+        if data_file is not None:
+            with open(os.path.join('tests/files', data_file), 'rb') as file:
+                self.content = file.read()
+        else:
+            self.content = b''
+        self.text = str(self.content, 'UTF-8', errors='replace')
+        print(self.url, self.content, self.text, sep='\n')
 
     def __str__(self):
         """Get the url of the response."""
@@ -43,22 +50,13 @@ responses = {
         Response('https://www.google.com'),
     'http://api.quickemailverification.com/v1/verify?email=richard@quickemailverification.com&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55':  # noqa
         Response('http://api.quickemailverification.com/v1/verify?email=richard@quickemailverification.com&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55',  # noqa
-                 '{"result":"invalid", "reason":"rejected_email", "disposable":"false", "accept_all":"false",'
-                 '"role":"false", "email":"richard@quickemailverification.com", "user":"richard",'
-                 '"domain":"quickemailverification.com", "safe_to_send":"false", "success":"true",'
-                 '"message":null}'),
+                 'richard_qem.email'),
     'http://api.quickemailverification.com/v1/verify?email=ali.samji@outlook.com&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55':  # noqa
         Response('http://api.quickemailverification.com/v1/verify?email=ali.samji@outlook.com&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55',  # noqa
-                 '{"result":"valid", "reason":"accepted_email", "disposable":"false", "accept_all":"false",'
-                 '"role":"false", "email":"ali.samji@outlook.com", "user":"ali",'
-                 '"domain":"outlook.com", "safe_to_send":"true", "success":"true",'
-                 '"message":null}'),
+                 'ali.samji.email'),
     'http://api.quickemailverification.com/v1/verify?email=lcc@usaji.org&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55':  # noqa
         Response('http://api.quickemailverification.com/v1/verify?email=lcc@usaji.org&apikey=e7c512323e3d0025bc7a94e59801abc1dc2f4a2d12ed295fef3b400b9e55',  # noqa
-                 '{"result":"valid", "reason":"accepted_email", "disposable":"false", "accept_all":"true",'
-                 '"role":"false", "email":"lcc@usaji.com", "user":"lcc",'
-                 '"domain":"usaji.com", "safe_to_send":"false", "success":"true",'
-                 '"message":null}'),
+                 'lcc.email'),
     'https://www.shitface.org':
         Response('https://www.shitface.org', status_code=410),
     'https://journeyforhealth.org':
@@ -66,7 +64,10 @@ responses = {
     'https://www.akfusa.org':
         Response('https://www.akfusa.org', status_code=403),
     'https://www.jubileeconcerts.ismaili':
-        exceptions.ConnectionError()
+        exceptions.ConnectionError(),
+    'https://ismailiinsight.org/eNewsletterPro/uploadedimages/000001/National/07.14.2017/071417_National.jpg':
+        Response('https://ismailiinsight.org/eNewsletterPro/uploadedimages/000001/National/07.14.2017/071417_National.jpg', # noqa
+                 '071417_National.jpg')
     }
 
 

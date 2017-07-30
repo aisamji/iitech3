@@ -1,5 +1,6 @@
 # iitech3 project ignores
 data/
+issues.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
