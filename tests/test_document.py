@@ -244,7 +244,8 @@ class TransformTests(unittest.TestCase):
         with open(os.path.join(current_dir, 'files/original.html'), 'r', encoding='UTF-8') as file:
             self._work_doc = document.Document(file.read())
         with open(os.path.join(current_dir, 'files/transform.yml'), 'r') as file:
-            self._remaining = self._work_doc.apply(yaml.load(file))
+            with mock.patch('document.requests.get', remocks.get):
+                self._remaining = self._work_doc.apply(yaml.load(file))
         with open(os.path.join(current_dir, 'files/done.html'), 'r', encoding='UTF-8') as file:
             self._done_doc = document.Document(file.read())
 
