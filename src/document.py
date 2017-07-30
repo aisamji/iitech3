@@ -136,44 +136,6 @@ class Document:
                 email.insert(0, '*INVALID {:s}*'.format(info.reason))
         return result
 
-    def _get_image_details(self, image_url):
-        """Get the proper source, height and width of the image specified by the given partial url."""
-        class RequestReader:
-            def __init__(self, request_object):
-                self._object = request_object
-
-            def read(self):
-                return self._object.content
-
-        base_url = 'https://ismailiinsight.org/eNewsletterPro/uploadedimages/000001/'
-        source = image_url if image_url.startswith('http') else (base_url + image_url)
-        data = Image.open(RequestReader(requests.get(source)))
-        return {
-            'source': source,
-            'width': data.width,
-            'height': data.height
-        }
-
-    def _set_contents(self, parent_tag, content_list):
-        """Convert the content_list to proper HTML and enclose with the given parent_tag."""
-        parent_tag.clear()
-        for item in content_list:
-            if isinstance(item, dict):
-                if 'link' in item:
-                    link_tag = self._data.new_tag('a',
-                                                  href=item['link'],
-                                                  target='_blank')
-                    try:
-                        link_tag.string = item['text']
-                    except KeyError:
-                        link_tag.string = item['link']
-                    parent_tag.append(link_tag)
-                else:
-                    raise exceptions.MissingTransformKey(item, ['link'])
-            else:
-                parent_tag.append(str(item) + '\n')
-
-    # public methods
     def review(self):
         """Review the document for accuracy before sending it out.
 
@@ -211,6 +173,7 @@ class Document:
 
         return result
 
+    # Repair method
     def repair(self):
         """Repair the document for any errors/bugs/typos/etc that are preventing it from loading correctly.
 
@@ -241,6 +204,46 @@ class Document:
             self._data.body.append(div)
 
         return result
+
+    # Transform method and helpers
+    def _get_image_details(self, image_url):
+        """Get the proper source, height and width of the image specified by the given partial url."""
+        class RequestReader:
+            def __init__(self, request_object):
+                self._object = request_object
+
+            def read(self):
+                return self._object.content
+
+        base_url = 'https://ismailiinsight.org/eNewsletterPro/uploadedimages/000001/'
+        source = image_url if image_url.startswith('http') else (base_url + image_url)
+        data = Image.open(RequestReader(requests.get(source)))
+        return {
+            'source': source,
+            'width': data.width,
+            'height': data.height
+        }
+
+    def _set_contents(self, parent_tag, content_list):
+        """Convert the content_list to proper HTML and enclose with the given parent_tag."""
+        if not isinstance(content_list, list):
+            content_list = [content_list]
+        parent_tag.clear()
+        for item in content_list:
+            if isinstance(item, dict):
+                if 'link' in item:
+                    link_tag = self._data.new_tag('a',
+                                                  href=item['link'],
+                                                  target='_blank')
+                    try:
+                        link_tag.string = item['text']
+                    except KeyError:
+                        link_tag.string = item['link']
+                    parent_tag.append(link_tag)
+                else:
+                    raise exceptions.MissingTransformKey(item, ['link'])
+            else:
+                parent_tag.append(str(item) + '\n')
 
     def apply(self, transforms):
         """Apply a transformation to the document (eg make all national changes to the document)."""
