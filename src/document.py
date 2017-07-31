@@ -278,16 +278,16 @@ class Document:
 
     def apply(self, transforms):
         """Apply a transformation to the document (eg make all national changes to the document)."""
-        if 'front' in transforms:
+        if 'top' in transforms:
             front_image = self._data.find('img', src=re.compile('^https://www\.ismailiinsight\.org/enewsletterpro/public_templates/IsmailiInsight/images/20121101Top_1\.jpg$|National')) # noqa
             front_caption = front_image.parent.div
 
-            image_data = self._get_image_details(transforms['front']['image'])
+            image_data = self._get_image_details(transforms['top']['image'])
             front_image['src'] = image_data['source']
             front_image['width'] = image_data['width']
             front_image['height'] = image_data['height']
-            self._set_content(front_caption, transforms['front']['caption'])
-            del transforms['front']
+            self._set_content(front_caption, transforms['top']['caption'])
+            del transforms['top']
 
         articles = self._data.find_all(self._is_article_title)
         for art in articles:
@@ -307,9 +307,7 @@ class Document:
                     not_first_paragraph = False
                     for descriptor in transforms[title]['body']:
                         if not_first_paragraph:
-                            last_br = self._data.new_tag('br')
-                            before_tag.insert_after(last_br)
-                            before_tag = last_br
+                            before_tag.append(self._data.new_tag('br'))
                         paragraph = self._data.new_tag('div',
                                                        style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
                         self._set_content(paragraph, descriptor)

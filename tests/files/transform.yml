@@ -1,11 +1,9 @@
-front:
+# These are all the transformation that should be applied during the Transform Tests
+top:
   image: National/07.14.2017/071417_National.jpg
-  caption:
-    - "His Highness the Aga Khan addresses senior leaders representing the worldwide Ismaili community on the occasion of his Diamond Jubilee at his Aiglemont residence in Gouvieux, France. Photo:"
-    - link: https://the.ismaili/diamond-jubilee/gallery-diamond-jubilee-homage-ceremony
-      text: The.Ismaili
+  caption: The caption can be a content descriptor or a list of content descriptors.
 
-Dynamic Test Title:
+Content Descriptors Test:
   body:
     - This is a paragraph specified as a content descriptor.
     -

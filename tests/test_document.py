@@ -241,69 +241,49 @@ class TransformTests(unittest.TestCase):
     def setUp(self):
         """Prepare the environment before executing each test."""
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        with open(os.path.join(current_dir, 'files/original.html'), 'r', encoding='UTF-8') as file:
-            self._work_doc = document.Document(file.read())
+        with open(os.path.join(current_dir, 'files/test.html'), 'r', encoding='UTF-8') as file:
+            self._document = document.Document(file.read())
         with open(os.path.join(current_dir, 'files/transform.yml'), 'r', encoding='UTF-8') as file:
             with mock.patch('document.requests.get', remocks.get):
-                self._remaining = self._work_doc.apply(yaml.load(file))
-        with open(os.path.join(current_dir, 'files/done.html'), 'r', encoding='UTF-8') as file:
-            self._done_doc = document.Document(file.read())
+                self._remaining = self._document.apply(yaml.load(file))
 
-    def test_front(self):
+    def test_top(self):
         """Confirm that the new front image and caption is applied on the boilerplate picture."""
-        working_image = self._work_doc._data.find('img', class_='front-image')
-        final_image = self._done_doc._data.find('img', class_='front-image')
+        desired_img = r'<img alt="##TrackClick##" class="top-image" height="267" src="https://ismailiinsight\.org/eNewsletterPro/uploadedimages/000001/National/07\.14\.2017/071417_National\.jpg" width="400"/>' # noqa
+        desired_cap = r'<div class="top-caption" style="font-family: Segoe UI; font-size: 10px; color: #595959; text-align: justify;">\s*The caption can be a content descriptor or a list of content descriptors\.\s*</div>' # noqa
 
-        # Get both captions and convert long runs of whitespace into a single space(chr 32).
-        working_caption = self._work_doc._data.find('div', class_='front-caption')
-        working_caption = re.sub(r'\s+', ' ', str(working_caption))
-        final_caption = self._done_doc._data.find('div', class_='front-caption')
-        final_caption = re.sub(r'\s+', ' ', str(final_caption))
+        tfrd_img = self._document._data.find('img', class_='top-image')
+        tfrd_cap = self._document._data.find('div', class_='top-caption')
 
-        self.assertNotIn('front', self._remaining,
-                         'The front transform should have been marked as applied.')
-        self.assertEqual(str(final_image), str(working_image),
-                         'The front image should have been transformed into the new one.')
-        self.assertEqual(final_caption, working_caption,
-                         'The front caption should have been transformed into the new one.')
+        self.assertIsNotNone(re.search(desired_img, str(tfrd_img)),
+                             'The top image should be transformed to the new one.')
+        self.assertIsNotNone(re.search(desired_cap, str(tfrd_cap)),
+                             'The top caption should be transformed to the new one.')
+        self.assertNotIn('top', self._remaining, 'The top transform should be marked as completed.')
 
-    def test_dynamic_descriptors(self):
+    def test_content_descriptors(self):
         """Confirm that a paragraph list item can be a content descriptor or a list of content descriptors."""
-        working_content = self._work_doc._data.find('td', class_='dynamic-article')
-        working_content = re.sub(r'\s+', ' ', str(working_content))
-        final_content = self._done_doc._data.find('td', class_='dynamic-article')
-        final_content = re.sub(r'\s+', ' ', str(final_content))
+        desired_first_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*This is a paragraph specified as a content descriptor\.\s*<br/>\s*</div>' # noqa
+        desired_second_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">This is a paragraph specified\s*as a list of content descriptors\.\s*</div>' # noqa
 
-        self.assertNotIn('Dynamic Test Title', self._remaining,
-                         'The dynamic transformation should be marked as applied.')
-        self.assertEqual(final_content, working_content,
-                         'The content should have been transformed into 2 text-only paragraphs.')
+        tfrd_first_para = self._document._data.find('div', class_='before-content-descriptor-para')
+        tfrd_first_para = tfrd_first_para.find_next_sibling('div')
+        tfrd_second_para = tfrd_first_para.find_next_sibling('div')
+
+        self.assertIsNotNone(re.search(desired_first_para, str(tfrd_first_para)),
+                             'The first paragraph should be transformed to the new one.')
+        self.assertIsNotNone(re.search(desired_second_para, str(tfrd_second_para)),
+                             'The second paragraph should be transformed to the new one.')
+        self.assertNotIn('Content Descriptors Test', self._remaining,
+                         'The content descriptors transform should be marked as completed.')
 
     def test_article_selection(self):
         """Confirm that only articles are selected."""
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        with open(os.path.join(current_dir, 'files/correct.html'), 'r', encoding='UTF-8') as file:
-            doc = document.Document(file.read())
-
         all_articles = [
-            'Monday, July 24, 2017',
-            'Ismaili USA App Now Available for Apple and Android',
-            'One Jamat. One USA Website.',
-            'Follow. Share. Tweet. Like. Love.',
-            'Time and Knowledge Nazrana (TKN)',
-            'Receiving the Diamond Jubilee Bulletin?',
-            'Quality of Life - Volunteers Needed',
-            'Ismaili Media and Communication Alliance (IMCA)',
-            'Register to Receive I-Cerv Updates',
-            'Resources for Aging Members',
-            'Time and Knowledge Nazrana',
-            'Call for Service',
-            'ACCESS',
-            'Need Help Resolving Disputes?',
-            'AKYSB Sports Camp',
-            'Marking the Diamond Jubilee and 50 Years of Aga Khan Foundation'
+            'Content Descriptors Test'
         ]
-        found_articles = list(map(lambda x: x.text.strip(), doc._data.find_all(doc._is_article_title)))
+        found_articles = list(map(lambda x: x.text.strip(),
+                                  self._document._data.find_all(self._document._is_article_title)))
 
         self.assertEqual(all_articles, found_articles,
                          'Only proper articles should be selected.')

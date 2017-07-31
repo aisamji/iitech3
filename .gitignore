@@ -1,6 +1,8 @@
 # iitech3 project ignores
 data/
 issues.txt
+tests/files/sample.html
+tests/files/correct.html
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
