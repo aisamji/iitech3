@@ -7,7 +7,7 @@ Content Descriptors Test:
   body:
     - This is a paragraph specified as a content descriptor.
     -
-      - This is a paragraph specified
+      - 'This is a paragraph specified '
       - as a list of content descriptors.
 
 Hyperlink Descriptors:
@@ -20,7 +20,7 @@ Hyperlink Descriptors:
 File Descriptor:
   body:
     -
-      - The file descriptor should have the baseurl appended before being transformed
+      - 'The file descriptor should have the baseurl appended before being transformed '
       - into an "a" tag that opens in a new window.
       - file: NorthernTexas/AKSWB%20Hope.pdf
         text: An old file.

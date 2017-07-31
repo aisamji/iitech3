@@ -257,6 +257,22 @@ class Document:
             'height': data.height
         }
 
+    def _add_hyperlink(self, parent_tag, descriptor):
+        """Add an 'a' tag as specified by the descriptor."""
+        if 'link' in descriptor:
+            link_text = descriptor['link']
+        elif 'file' in descriptor:
+            link_text = self.BASE_URL + descriptor['file']
+        else:
+            raise exceptions.UnknownTransform(descriptor, ['link', 'file'])
+
+        link_tag = self._data.new_tag('a', href=link_text, target='_blank')
+        try:
+            self._set_content(link_tag, descriptor['text'])
+        except KeyError:
+            link_tag.string = link_text
+        parent_tag.append(link_tag)
+
     def _set_content(self, parent_tag, content_list):
         """Convert the content_list to proper HTML and enclose with the given parent_tag."""
         if not isinstance(content_list, list):
@@ -264,28 +280,35 @@ class Document:
         parent_tag.clear()
         for item in content_list:
             if isinstance(item, dict):
-                if 'link' in item:
-                    link_tag = self._data.new_tag('a',
-                                                  href=item['link'],
-                                                  target='_blank')
-                    try:
-                        self._set_content(link_tag, item['text'])
-                    except KeyError:
-                        link_tag.string = item['link']
-                    parent_tag.append(link_tag)
-                elif 'file' in item:
-                    file_tag = self._data.new_tag('a',
-                                                  href=(self.BASE_URL + item['file']),
-                                                  target='_blank')
-                    try:
-                        self._set_content(file_tag, item['text'])
-                    except KeyError:
-                        file_tag.string = item['file']
-                    parent_tag.append(file_tag)
+                if 'link' in item or 'file' in item:
+                    self._add_hyperlink(parent_tag, item)
                 else:
-                    raise exceptions.MissingTransformKey(item, ['link', 'file'])
+                    raise exceptions.UnknownTransform(item, ['link', 'file'])
             else:
-                parent_tag.append(str(item) + '\n')
+                parent_tag.append(str(item))
+
+    def _set_body(self, article_title, paragraph_list):
+        """Overwrite the body of the given article with the new paragraphs."""
+        before_tag = article_title.find_next_sibling(self._is_before_body)
+
+        # Remove all existing paragraphs
+        before_return = article_title.find_next_sibling(self._is_before_return)
+        for tag in list(before_tag.next_siblings):
+            if tag == before_return:
+                break
+            tag.extract()  # decompose does not exist for bs4.NavigableString
+
+        # Add each paragraph in turn
+        not_first_paragraph = False
+        for descriptor in paragraph_list:
+            if not_first_paragraph:
+                before_tag.append(self._data.new_tag('br'))
+            paragraph = self._data.new_tag('div',
+                                           style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
+            self._set_content(paragraph, descriptor)
+            before_tag.insert_after(paragraph)
+            not_first_paragraph = True
+            before_tag = paragraph
 
     def apply(self, transforms):
         """Apply a transformation to the document (eg make all national changes to the document)."""
@@ -302,32 +325,14 @@ class Document:
 
         articles = self._data.find_all(self._is_article_title)
         for art in articles:
-            try:
-                title = art.text.strip()
-                if 'body' in transforms[title]:
-                    before_tag = art.find_next_sibling(self._is_before_body)
-
-                    # Remove all paragraphs
-                    before_return = art.find_next_sibling(self._is_before_return)
-                    for tag in list(before_tag.next_siblings):
-                        if tag == before_return:
-                            break
-                        tag.extract()
-
-                    # Add each paragraph in turn
-                    not_first_paragraph = False
-                    for descriptor in transforms[title]['body']:
-                        if not_first_paragraph:
-                            before_tag.append(self._data.new_tag('br'))
-                        paragraph = self._data.new_tag('div',
-                                                       style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
-                        self._set_content(paragraph, descriptor)
-                        before_tag.insert_after(paragraph)
-                        not_first_paragraph = True
-                        before_tag = paragraph
-                del transforms[title]
-            except KeyError:
+            title = art.text.strip()
+            if title not in transforms:
                 continue
+            try:
+                self._set_body(art, transforms[title]['body'])
+            except KeyError:
+                pass
+            del transforms[title]
 
         return transforms
 
