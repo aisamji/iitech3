@@ -9,3 +9,10 @@ Content Descriptors Test:
     -
       - This is a paragraph specified
       - as a list of content descriptors.
+
+Hyperlink Descriptors:
+  body:
+    -
+      - The link descriptor should be transformed into an "a" tag that opens in a new window.
+      - link: https://the.ismaili/diamond-jubilee/gallery-diamond-jubilee-homage-ceremony
+        text: An old link.

@@ -261,7 +261,7 @@ class TransformTests(unittest.TestCase):
                              'The top caption should be transformed to the new one.')
         self.assertNotIn('top', self._remaining, 'The top transform should be marked as completed.')
 
-    def test_content_descriptors(self):
+    def test_article_transform(self):
         """Confirm that a paragraph list item can be a content descriptor or a list of content descriptors."""
         desired_first_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*This is a paragraph specified as a content descriptor\.\s*<br/>\s*</div>' # noqa
         desired_second_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">This is a paragraph specified\s*as a list of content descriptors\.\s*</div>' # noqa
@@ -271,19 +271,29 @@ class TransformTests(unittest.TestCase):
         tfrd_second_para = tfrd_first_para.find_next_sibling('div')
 
         self.assertIsNotNone(re.search(desired_first_para, str(tfrd_first_para)),
-                             'The first paragraph should be transformed to the new one.')
+                             'The descriptor should be converted into a paragraph.')
         self.assertIsNotNone(re.search(desired_second_para, str(tfrd_second_para)),
-                             'The second paragraph should be transformed to the new one.')
+                             'The The descriptors list should be converted into a paragraph.')
         self.assertNotIn('Content Descriptors Test', self._remaining,
                          'The content descriptors transform should be marked as completed.')
 
     def test_article_selection(self):
         """Confirm that only articles are selected."""
         all_articles = [
-            'Content Descriptors Test'
+            'Content Descriptors Test',
+            'Hyperlink Descriptors'
         ]
         found_articles = list(map(lambda x: x.text.strip(),
                                   self._document._data.find_all(self._document._is_article_title)))
 
         self.assertEqual(all_articles, found_articles,
                          'Only proper articles should be selected.')
+
+    def test_link_descriptor(self):
+        """Confirm that link descriptors are properly generated."""
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The link descriptor should be transformed into an "a" tag that opens in a new window\.\s*<a href="https://the\.ismaili/diamond-jubilee/gallery-diamond-jubilee-homage-ceremony" target="_blank">An old link\.</a>\s*</div>' # noqa
+        tfrd_para = self._document._data.find('div', class_='before-link-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The link descriptor should be appended as an "a" tag to the content.')
