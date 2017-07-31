@@ -269,9 +269,9 @@ class TransformTests(unittest.TestCase):
 
     def test_dynamic_descriptors(self):
         """Confirm that a paragraph list item can be a content descriptor or a list of content descriptors."""
-        working_content = self._work_doc._data.find('div', class_='dynamic-content')
+        working_content = self._work_doc._data.find('td', class_='dynamic-article')
         working_content = re.sub(r'\s+', ' ', str(working_content))
-        final_content = self._done_doc._data.find('div', class_='dynamic-content')
+        final_content = self._done_doc._data.find('td', class_='dynamic-article')
         final_content = re.sub(r'\s+', ' ', str(final_content))
 
         self.assertNotIn('Dynamic Test Title', self._remaining,

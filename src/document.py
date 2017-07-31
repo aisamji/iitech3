@@ -36,6 +36,37 @@ class Document:
         """Determine whether a tag creates a new anchor in the document."""
         return tag.name == 'a' and tag.get('name') is not None
 
+    @staticmethod
+    def _is_article_title(tag):
+        """Determine whether the tag is an article title tag."""
+        if tag.name != 'span' or tag.get('style') is None:
+            return False
+        count = 2
+        count += 1 if 'background-color' in tag['style'] else 0
+        count += 1 if 'font-family' in tag['style'] else 0
+        return (
+            re.search(r'^\s*$', tag.text) is None and
+            'font-size: 16px' in tag['style'] and
+            ('color: #595959' in tag['style'] or 'color: rgb(89, 89, 89)' in tag['style']) and
+            tag['style'].count(';') == count
+        )
+
+    @staticmethod
+    def _is_before_body(tag):
+        """Determine whether the tag preceeds a non empty div tag."""
+        next_div = tag.find_next_sibling('div')
+        if tag.name != 'div' or next_div is None:
+            return False
+        return re.search(r'^\s*$', next_div.text) is None
+
+    @staticmethod
+    def _is_before_return(tag):
+        """Determine whether the tag preceeds a Return to Top link."""
+        next_tag = tag.find_next_sibling(lambda x: isinstance(x, bs4.Tag))
+        if tag.name != 'div' or next_tag.name != 'a' or not next_tag.has_attr('href'):
+            return False
+        return next_tag['href'] == '#ReturnTop'
+
     # review method and helpers
     def _fix_external_link(self, link):
         """Fix an 'a' tag that references an external resource.
@@ -224,7 +255,7 @@ class Document:
             'height': data.height
         }
 
-    def _set_contents(self, parent_tag, content_list):
+    def _set_content(self, parent_tag, content_list):
         """Convert the content_list to proper HTML and enclose with the given parent_tag."""
         if not isinstance(content_list, list):
             content_list = [content_list]
@@ -255,8 +286,40 @@ class Document:
             front_image['src'] = image_data['source']
             front_image['width'] = image_data['width']
             front_image['height'] = image_data['height']
-            self._set_contents(front_caption, transforms['front']['caption'])
+            self._set_content(front_caption, transforms['front']['caption'])
             del transforms['front']
+
+        articles = self._data.find_all(self._is_article_title)
+        for art in articles:
+            try:
+                title = art.text.strip()
+                if 'body' in transforms[title]:
+                    before_tag = art.find_next_sibling(self._is_before_body)
+
+                    # Remove all paragraphs
+                    before_return = art.find_next_sibling(self._is_before_return)
+                    for tag in list(before_tag.next_siblings):
+                        if tag == before_return:
+                            break
+                        tag.extract()
+
+                    # Add each paragraph in turn
+                    not_first_paragraph = False
+                    for descriptor in transforms[title]['body']:
+                        if not_first_paragraph:
+                            last_br = self._data.new_tag('br')
+                            before_tag.insert_after(last_br)
+                            before_tag = last_br
+                        paragraph = self._data.new_tag('div',
+                                                       style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
+                        self._set_content(paragraph, descriptor)
+                        before_tag.insert_after(paragraph)
+                        not_first_paragraph = True
+                        before_tag = paragraph
+                del transforms[title]
+            except KeyError:
+                continue
+
         return transforms
 
     # magic methods

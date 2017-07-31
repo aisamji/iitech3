@@ -6,7 +6,7 @@ front:
       text: The.Ismaili
 
 Dynamic Test Title:
-  content:
+  body:
     - This is a paragraph specified as a content descriptor.
     -
       - This is a paragraph specified
