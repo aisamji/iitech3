@@ -4,3 +4,10 @@ front:
     - "His Highness the Aga Khan addresses senior leaders representing the worldwide Ismaili community on the occasion of his Diamond Jubilee at his Aiglemont residence in Gouvieux, France. Photo:"
     - link: https://the.ismaili/diamond-jubilee/gallery-diamond-jubilee-homage-ceremony
       text: The.Ismaili
+
+Dynamic Test Title:
+  content:
+    - This is a paragraph specified as a content descriptor.
+    -
+      - This is a paragraph specified
+      - as a list of content descriptors.

@@ -243,7 +243,7 @@ class TransformTests(unittest.TestCase):
         current_dir = os.path.dirname(os.path.abspath(__file__))
         with open(os.path.join(current_dir, 'files/original.html'), 'r', encoding='UTF-8') as file:
             self._work_doc = document.Document(file.read())
-        with open(os.path.join(current_dir, 'files/transform.yml'), 'r') as file:
+        with open(os.path.join(current_dir, 'files/transform.yml'), 'r', encoding='UTF-8') as file:
             with mock.patch('document.requests.get', remocks.get):
                 self._remaining = self._work_doc.apply(yaml.load(file))
         with open(os.path.join(current_dir, 'files/done.html'), 'r', encoding='UTF-8') as file:
@@ -263,6 +263,18 @@ class TransformTests(unittest.TestCase):
         self.assertNotIn('front', self._remaining,
                          'The front transform should have been marked as applied.')
         self.assertEqual(str(final_image), str(working_image),
-                         'The front image should have been transformed to the new one.')
+                         'The front image should have been transformed into the new one.')
         self.assertEqual(final_caption, working_caption,
-                         'The front caption should have been transformed to the new one.')
+                         'The front caption should have been transformed into the new one.')
+
+    def test_dynamic_descriptors(self):
+        """Confirm that a paragraph list item can be a content descriptor or a list of content descriptors."""
+        working_content = self._work_doc._data.find('div', class_='dynamic-content')
+        working_content = re.sub(r'\s+', ' ', str(working_content))
+        final_content = self._done_doc._data.find('div', class_='dynamic-content')
+        final_content = re.sub(r'\s+', ' ', str(final_content))
+
+        self.assertNotIn('Dynamic Test Title', self._remaining,
+                         'The dynamic transformation should be marked as applied.')
+        self.assertEqual(final_content, working_content,
+                         'The content should have been transformed into 2 text-only paragraphs.')
