@@ -16,6 +16,9 @@ import exceptions
 class Document:
     """Represents an Ismaili Insight HTML newsletter."""
 
+    # Class constants
+    BASE_URL = 'https://ismailiinsight.org/eNewsletterPro/uploadedimages/000001/'
+
     def __init__(self, code):
         """Initialize a document from the given code."""
         code = str(code)
@@ -246,8 +249,7 @@ class Document:
             def read(self):
                 return self._object.content
 
-        base_url = 'https://ismailiinsight.org/eNewsletterPro/uploadedimages/000001/'
-        source = image_url if image_url.startswith('http') else (base_url + image_url)
+        source = image_url if image_url.startswith('http') else (self.BASE_URL + image_url)
         data = Image.open(RequestReader(requests.get(source)))
         return {
             'source': source,
@@ -267,12 +269,21 @@ class Document:
                                                   href=item['link'],
                                                   target='_blank')
                     try:
-                        link_tag.string = item['text']
+                        self._set_content(link_tag, item['text'])
                     except KeyError:
                         link_tag.string = item['link']
                     parent_tag.append(link_tag)
+                elif 'file' in item:
+                    file_tag = self._data.new_tag('a',
+                                                  href=(self.BASE_URL + item['file']),
+                                                  target='_blank')
+                    try:
+                        self._set_content(file_tag, item['text'])
+                    except KeyError:
+                        file_tag.string = item['file']
+                    parent_tag.append(file_tag)
                 else:
-                    raise exceptions.MissingTransformKey(item, ['link'])
+                    raise exceptions.MissingTransformKey(item, ['link', 'file'])
             else:
                 parent_tag.append(str(item) + '\n')
 

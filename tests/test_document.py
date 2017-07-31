@@ -281,7 +281,8 @@ class TransformTests(unittest.TestCase):
         """Confirm that only articles are selected."""
         all_articles = [
             'Content Descriptors Test',
-            'Hyperlink Descriptors'
+            'Hyperlink Descriptors',
+            'File Descriptor'
         ]
         found_articles = list(map(lambda x: x.text.strip(),
                                   self._document._data.find_all(self._document._is_article_title)))
@@ -291,9 +292,19 @@ class TransformTests(unittest.TestCase):
 
     def test_link_descriptor(self):
         """Confirm that link descriptors are properly generated."""
-        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The link descriptor should be transformed into an "a" tag that opens in a new window\.\s*<a href="https://the\.ismaili/diamond-jubilee/gallery-diamond-jubilee-homage-ceremony" target="_blank">An old link\.</a>\s*</div>' # noqa
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The link descriptor should be transformed into an "a" tag that opens in a new window\.\s*<a href="https://the\.ismaili/diamond-jubilee/gallery-diamond-jubilee-homage-ceremony" target="_blank">\s*An old link\.\s*</a>\s*</div>' # noqa
         tfrd_para = self._document._data.find('div', class_='before-link-para')
         tfrd_para = tfrd_para.find_next_sibling('div')
 
         self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
                              'The link descriptor should be appended as an "a" tag to the content.')
+
+    def test_file_descriptor(self):
+        """Confirm that file descriptors are properly generated."""
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The file descriptor should have the baseurl appended before being transformed\s*into an "a" tag that opens in a new window\.\s*<a href="https://ismailiinsight\.org/eNewsletterPro/uploadedimages/000001/NorthernTexas/AKSWB%20Hope\.pdf" target="_blank">\s*An old file\.\s*</a>\s*</div>' # noqa
+        tfrd_para = self._document._data.find('div', class_='before-file-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+        print(tfrd_para)
+
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The file descriptor should be appended as an "a" tag to the content.')

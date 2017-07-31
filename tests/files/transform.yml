@@ -16,3 +16,11 @@ Hyperlink Descriptors:
       - The link descriptor should be transformed into an "a" tag that opens in a new window.
       - link: https://the.ismaili/diamond-jubilee/gallery-diamond-jubilee-homage-ceremony
         text: An old link.
+
+File Descriptor:
+  body:
+    -
+      - The file descriptor should have the baseurl appended before being transformed
+      - into an "a" tag that opens in a new window.
+      - file: NorthernTexas/AKSWB%20Hope.pdf
+        text: An old file.
