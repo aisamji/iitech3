@@ -278,3 +278,32 @@ class TransformTests(unittest.TestCase):
                          'The dynamic transformation should be marked as applied.')
         self.assertEqual(final_content, working_content,
                          'The content should have been transformed into 2 text-only paragraphs.')
+
+    def test_article_selection(self):
+        """Confirm that only articles are selected."""
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(current_dir, 'files/correct.html'), 'r', encoding='UTF-8') as file:
+            doc = document.Document(file.read())
+
+        all_articles = [
+            'Monday, July 24, 2017',
+            'Ismaili USA App Now Available for Apple and Android',
+            'One Jamat. One USA Website.',
+            'Follow. Share. Tweet. Like. Love.',
+            'Time and Knowledge Nazrana (TKN)',
+            'Receiving the Diamond Jubilee Bulletin?',
+            'Quality of Life - Volunteers Needed',
+            'Ismaili Media and Communication Alliance (IMCA)',
+            'Register to Receive I-Cerv Updates',
+            'Resources for Aging Members',
+            'Time and Knowledge Nazrana',
+            'Call for Service',
+            'ACCESS',
+            'Need Help Resolving Disputes?',
+            'AKYSB Sports Camp',
+            'Marking the Diamond Jubilee and 50 Years of Aga Khan Foundation'
+        ]
+        found_articles = list(map(lambda x: x.text.strip(), doc._data.find_all(doc._is_article_title)))
+
+        self.assertEqual(all_articles, found_articles,
+                         'Only proper articles should be selected.')
