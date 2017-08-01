@@ -24,3 +24,9 @@ File Descriptor:
       - into an "a" tag that opens in a new window.
       - file: NorthernTexas/AKSWB%20Hope.pdf
         text: An old file.
+
+Email Descriptor:
+  body:
+    -
+      - The email descriptor should be transformed into a proper mailto link.
+      - email: ali.samji@outlook.com

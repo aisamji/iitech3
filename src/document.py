@@ -260,18 +260,22 @@ class Document:
     def _add_hyperlink(self, parent_tag, descriptor):
         """Add an 'a' tag as specified by the descriptor."""
         if 'link' in descriptor:
-            link_text = descriptor['link']
+            link_url = default_text = descriptor['link']
         elif 'file' in descriptor:
-            link_text = self.BASE_URL + descriptor['file']
+            link_url = self.BASE_URL + descriptor['file']
+            default_text = descriptor['file'].rsplit('/')[-1]
+        elif 'email' in descriptor:
+            link_url = 'mailto:' + descriptor['email']
+            default_text = descriptor['email']
         else:
-            raise exceptions.UnknownTransform(descriptor, ['link', 'file'])
+            raise exceptions.UnknownTransform(descriptor, ['link', 'file', 'email'])
 
-        link_tag = self._data.new_tag('a', href=link_text, target='_blank')
+        a_tag = self._data.new_tag('a', href=link_url, target='_blank')
         try:
-            self._set_content(link_tag, descriptor['text'])
+            self._set_content(a_tag, descriptor['text'])
         except KeyError:
-            link_tag.string = link_text
-        parent_tag.append(link_tag)
+            a_tag.string = default_text
+        parent_tag.append(a_tag)
 
     def _set_content(self, parent_tag, content_list):
         """Convert the content_list to proper HTML and enclose with the given parent_tag."""
@@ -280,10 +284,13 @@ class Document:
         parent_tag.clear()
         for item in content_list:
             if isinstance(item, dict):
-                if 'link' in item or 'file' in item:
+                # Using a set intersection ((keys_to_search_for) & item.keys()),
+                # The set will be empty when the keys are not found.
+                # This takes advantage of the fact that empty == False and non-empty == True.
+                if ('link', 'file', 'email') & item.keys():
                     self._add_hyperlink(parent_tag, item)
                 else:
-                    raise exceptions.UnknownTransform(item, ['link', 'file'])
+                    raise exceptions.UnknownTransform(item, ['link', 'file', 'email'])
             else:
                 parent_tag.append(str(item))
 
