@@ -284,7 +284,10 @@ class TransformTests(unittest.TestCase):
             'Hyperlink Descriptors',
             'File Descriptor',
             'Email Descriptor',
-            'Image Descriptor'
+            'Image Descriptor',
+            'Bold Descriptor',
+            'Italics Descriptor',
+            'Underline Descriptor'
         ]
         found_articles = list(map(lambda x: x.text.strip(),
                                   self._document._data.find_all(self._document._is_article_title)))
@@ -342,3 +345,13 @@ class TransformTests(unittest.TestCase):
         self.assertIsNotNone(re.search(desired_img_para, str(tfrd_img_para)),
                              'The image descriptor should be converted to a 2-row table containing the image'
                              ' in the first row and the caption in the second.')
+
+    def test_bold_descriptor(self):
+        """Confirm that the bold descriptors are properly generated."""
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <strong>bold</strong> descriptor should enclose its text in a strong tag pair\.\s*</div>' # noqa
+        tfrd_para = self._document._data.find('div', class_='before-bold-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+
+        print(tfrd_para)
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The bold descriptor should be wrapped in a strong tag pair.')

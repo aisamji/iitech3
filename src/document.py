@@ -287,7 +287,7 @@ class Document:
         parent_tag.append(a_tag)
 
     def _add_image(self, parent_tag, descriptor):
-        """Create a 'table' tag that contains an image and, optionally, a caption."""
+        """Add a 'table' tag that contains an image and, optionally, a caption."""
         # Create table tag
         table_tag = self._data.new_tag('table', align='center',
                                        style="font-family: 'Segoe UI'; font-size: 13px; color: rgb(89, 89, 89);")
@@ -318,6 +318,17 @@ class Document:
             pass
         parent_tag.append(table_tag)
 
+    def _add_formatted(self, parent_tag, descriptor):
+        """Add an appropriate text formmating tag according to the descriptor."""
+        if 'bold' in descriptor:
+            format_tag = self._data.new_tag('strong')
+            content_list = descriptor['bold']
+        else:
+            raise exceptions.UnknownTransform(descriptor, ['bold'])
+
+        self._set_content(format_tag, content_list)
+        parent_tag.append(format_tag)
+
     def _set_content(self, parent_tag, content_list):
         """Convert the content_list to proper HTML and enclose with the given parent_tag."""
         if not isinstance(content_list, list):
@@ -332,8 +343,10 @@ class Document:
                     self._add_hyperlink(parent_tag, item)
                 elif 'image' in item:
                     self._add_image(parent_tag, item)
+                elif 'bold' in item:
+                    self._add_formatted(parent_tag, item)
                 else:
-                    raise exceptions.UnknownTransform(item, ['link', 'file', 'email', 'image'])
+                    raise exceptions.UnknownTransform(item, ['link', 'file', 'email', 'image', 'bold'])
             else:
                 parent_tag.append(str(item))
 

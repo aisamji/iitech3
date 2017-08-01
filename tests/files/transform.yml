@@ -37,3 +37,24 @@ Image Descriptor:
       caption:
         - 'The image descriptor should be transformed '
         - into a proper img tag aligned via a table tag.
+
+Bold Descriptor:
+  body:
+    -
+      - 'The '
+      - bold: bold
+      - ' descriptor should enclose its text in a strong tag pair.'
+
+# Italics Descriptor:
+#   body:
+#     -
+#       - 'The '
+#       - italics: italics
+#       - ' descriptor should enclose its text in an em tag pair.'
+#
+# Underline Descriptor:
+#   body:
+#     -
+#       - 'The '
+#       - underline: underline
+#       - ' descriptor should enclose its text in a u tag pair.'
