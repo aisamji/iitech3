@@ -355,3 +355,13 @@ class TransformTests(unittest.TestCase):
         print(tfrd_para)
         self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
                              'The bold descriptor should be wrapped in a strong tag pair.')
+
+    def test_italics_descriptor(self):
+        """Confirm that the italics descriptors are properly generated."""
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <em>italics</em> descriptor should enclose its text in an em tag pair\.\s*</div>' # noqa
+        tfrd_para = self._document._data.find('div', class_='before-italics-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+
+        print(tfrd_para)
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The italics descriptor should be wrapped in an em tag pair.')

@@ -323,8 +323,11 @@ class Document:
         if 'bold' in descriptor:
             format_tag = self._data.new_tag('strong')
             content_list = descriptor['bold']
+        elif 'italics' in descriptor:
+            format_tag = self._data.new_tag('em')
+            content_list = descriptor['italics']
         else:
-            raise exceptions.UnknownTransform(descriptor, ['bold'])
+            raise exceptions.UnknownTransform(descriptor, ['bold', 'italics'])
 
         self._set_content(format_tag, content_list)
         parent_tag.append(format_tag)
@@ -336,17 +339,20 @@ class Document:
         parent_tag.clear()
         for item in content_list:
             if isinstance(item, dict):
+                hyperlinks = {'link', 'file', 'email'}
+                formats = {'bold', 'italics'}
+                miscellaneous = {'image'}
                 # Using a set intersection ((keys_to_search_for) & item.keys()),
                 # The set will be empty when the keys are not found.
                 # This takes advantage of the fact that empty == False and non-empty == True.
-                if ('link', 'file', 'email') & item.keys():
+                if hyperlinks & item.keys():
                     self._add_hyperlink(parent_tag, item)
                 elif 'image' in item:
                     self._add_image(parent_tag, item)
-                elif 'bold' in item:
+                elif formats & item.keys():
                     self._add_formatted(parent_tag, item)
                 else:
-                    raise exceptions.UnknownTransform(item, ['link', 'file', 'email', 'image', 'bold'])
+                    raise exceptions.UnknownTransform(item, hyperlinks + formats + miscellaneous)
             else:
                 parent_tag.append(str(item))
 
