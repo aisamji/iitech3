@@ -297,6 +297,7 @@ class TransformTests(unittest.TestCase):
         tfrd_para = self._document._data.find('div', class_='before-link-para')
         tfrd_para = tfrd_para.find_next_sibling('div')
 
+        print(tfrd_para)
         self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
                              'The link descriptor should be appended as an "a" tag to the content.')
 
@@ -306,6 +307,7 @@ class TransformTests(unittest.TestCase):
         tfrd_para = self._document._data.find('div', class_='before-file-para')
         tfrd_para = tfrd_para.find_next_sibling('div')
 
+        print(tfrd_para)
         self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
                              'The file descriptor should be appended as an "a" '
                              'tag with a link to the file on the eNP server.')
@@ -316,5 +318,6 @@ class TransformTests(unittest.TestCase):
         tfrd_para = self._document._data.find('div', class_='before-email-para')
         tfrd_para = tfrd_para.find_next_sibling('div')
 
+        print(tfrd_para)
         self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
                              'The email descriptor should be added as an "a" tag with a mailto link.')

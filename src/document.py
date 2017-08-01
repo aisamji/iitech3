@@ -240,6 +240,11 @@ class Document:
         return result
 
     # Transform method and helpers
+    @staticmethod
+    def _ensure_quoted(url):
+        """Ensure that the given url is quoted."""
+        return requests.compat.quote(requests.compat.unquote(url))
+
     def _get_image_details(self, image_url):
         """Get the proper source, height and width of the image specified by the given partial url."""
         class RequestReader:
@@ -249,7 +254,7 @@ class Document:
             def read(self):
                 return self._object.content
 
-        source = image_url if image_url.startswith('http') else (self.BASE_URL + image_url)
+        source = requests.compat.urljoin(self.BASE_URL, self._ensure_quoted(image_url))
         data = Image.open(RequestReader(requests.get(source)))
         return {
             'source': source,
@@ -260,9 +265,11 @@ class Document:
     def _add_hyperlink(self, parent_tag, descriptor):
         """Add an 'a' tag as specified by the descriptor."""
         if 'link' in descriptor:
-            link_url = default_text = descriptor['link']
+            link_url = descriptor['link']
+            default_text = descriptor['link']
         elif 'file' in descriptor:
-            link_url = self.BASE_URL + descriptor['file']
+            link_url = requests.compat.urljoin(self.BASE_URL,
+                                               self._ensure_quoted(descriptor['file']))
             default_text = descriptor['file'].rsplit('/')[-1]
         elif 'email' in descriptor:
             link_url = 'mailto:' + descriptor['email']

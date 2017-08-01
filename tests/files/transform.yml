@@ -22,7 +22,7 @@ File Descriptor:
     -
       - 'The file descriptor should have the baseurl appended before being transformed '
       - into an "a" tag that opens in a new window.
-      - file: NorthernTexas/AKSWB%20Hope.pdf
+      - file: NorthernTexas/AKSWB Hope.pdf
         text: An old file.
 
 Email Descriptor:
