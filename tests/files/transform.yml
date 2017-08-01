@@ -30,3 +30,10 @@ Email Descriptor:
     -
       - The email descriptor should be transformed into a proper mailto link.
       - email: ali.samji@outlook.com
+
+Image Descriptor:
+  body:
+    - image: National/07.14.2017/071417_National.jpg
+      caption:
+        - 'The image descriptor should be transformed '
+        - into a proper img tag aligned via a table tag.

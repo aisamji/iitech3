@@ -283,7 +283,8 @@ class TransformTests(unittest.TestCase):
             'Content Descriptors Test',
             'Hyperlink Descriptors',
             'File Descriptor',
-            'Email Descriptor'
+            'Email Descriptor',
+            'Image Descriptor'
         ]
         found_articles = list(map(lambda x: x.text.strip(),
                                   self._document._data.find_all(self._document._is_article_title)))
@@ -321,3 +322,23 @@ class TransformTests(unittest.TestCase):
         print(tfrd_para)
         self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
                              'The email descriptor should be added as an "a" tag with a mailto link.')
+
+    def test_image_descriptor(self):
+        """Confirm that the image descriptors are properly generated."""
+        desired_img_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*' # noqa
+                            r'<table align="center" style="font-family: \'Segoe UI\';'
+                            r' font-size: 13px; color: rgb\(89, 89, 89\);">\s*<tbody>\s*<tr>\s*'
+                            r'<td style="text-align: center; vertical-align: middle;">\s*<img height="267"'
+                            r' src="https://ismailiinsight\.org/eNewsletterPro/uploadedimages/000001/'
+                            r'National/07\.14\.2017/071417_National\.jpg" width="400"/>\s*</td>\s*</tr>\s*<tr>\s*'
+                            r'<td style="text-align: justify; vertical-align: middle; font-size: 10px;">\s*'
+                            r'The image descriptor should be transformed into a proper img '
+                            r'tag aligned via a table tag\.\s*</td>\s*</tr>\s*</tbody>\s*</table>\s*</div>')
+
+        tfrd_img_para = self._document._data.find('div', class_='before-image-para')
+        tfrd_img_para = tfrd_img_para.find_next_sibling('div')
+
+        print(tfrd_img_para)
+        self.assertIsNotNone(re.search(desired_img_para, str(tfrd_img_para)),
+                             'The image descriptor should be converted to a 2-row table containing the image'
+                             ' in the first row and the caption in the second.')

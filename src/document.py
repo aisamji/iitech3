@@ -264,6 +264,7 @@ class Document:
 
     def _add_hyperlink(self, parent_tag, descriptor):
         """Add an 'a' tag as specified by the descriptor."""
+        # Define link and default display text
         if 'link' in descriptor:
             link_url = descriptor['link']
             default_text = descriptor['link']
@@ -277,12 +278,45 @@ class Document:
         else:
             raise exceptions.UnknownTransform(descriptor, ['link', 'file', 'email'])
 
+        # Create 'a' tag that opens in new window
         a_tag = self._data.new_tag('a', href=link_url, target='_blank')
         try:
             self._set_content(a_tag, descriptor['text'])
         except KeyError:
             a_tag.string = default_text
         parent_tag.append(a_tag)
+
+    def _add_image(self, parent_tag, descriptor):
+        """Create a 'table' tag that contains an image and, optionally, a caption."""
+        # Create table tag
+        table_tag = self._data.new_tag('table', align='center',
+                                       style="font-family: 'Segoe UI'; font-size: 13px; color: rgb(89, 89, 89);")
+        tbody_tag = self._data.new_tag('tbody')
+        table_tag.append(tbody_tag)
+
+        # Add Image Row
+        tr_img_tag = self._data.new_tag('tr')
+        td_img_tag = self._data.new_tag('td',
+                                        style='text-align: center; vertical-align: middle;')
+        image_data = self._get_image_details(descriptor['image'])
+        img_tag = self._data.new_tag('img', src=image_data['source'],
+                                     width=image_data['width'],
+                                     height=image_data['height'])
+        td_img_tag.append(img_tag)
+        tr_img_tag.append(td_img_tag)
+        tbody_tag.append(tr_img_tag)
+
+        # Add Caption Row, if applicable
+        try:
+            tr_cap_tag = self._data.new_tag('tr')
+            td_cap_tag = self._data.new_tag('td',
+                                            style='text-align: justify; vertical-align: middle; font-size: 10px;')
+            self._set_content(td_cap_tag, descriptor['caption'])
+            tr_cap_tag.append(td_cap_tag)
+            tbody_tag.append(tr_cap_tag)
+        except KeyError:
+            pass
+        parent_tag.append(table_tag)
 
     def _set_content(self, parent_tag, content_list):
         """Convert the content_list to proper HTML and enclose with the given parent_tag."""
@@ -296,8 +330,10 @@ class Document:
                 # This takes advantage of the fact that empty == False and non-empty == True.
                 if ('link', 'file', 'email') & item.keys():
                     self._add_hyperlink(parent_tag, item)
+                elif 'image' in item:
+                    self._add_image(parent_tag, item)
                 else:
-                    raise exceptions.UnknownTransform(item, ['link', 'file', 'email'])
+                    raise exceptions.UnknownTransform(item, ['link', 'file', 'email', 'image'])
             else:
                 parent_tag.append(str(item))
 
