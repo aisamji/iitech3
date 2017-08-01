@@ -326,8 +326,11 @@ class Document:
         elif 'italics' in descriptor:
             format_tag = self._data.new_tag('em')
             content_list = descriptor['italics']
+        elif 'underline' in descriptor:
+            format_tag = self._data.new_tag('u')
+            content_list = descriptor['underline']
         else:
-            raise exceptions.UnknownTransform(descriptor, ['bold', 'italics'])
+            raise exceptions.UnknownTransform(descriptor, ['bold', 'italics', 'underline'])
 
         self._set_content(format_tag, content_list)
         parent_tag.append(format_tag)
@@ -340,7 +343,7 @@ class Document:
         for item in content_list:
             if isinstance(item, dict):
                 hyperlinks = {'link', 'file', 'email'}
-                formats = {'bold', 'italics'}
+                formats = {'bold', 'italics', 'underline'}
                 miscellaneous = {'image'}
                 # Using a set intersection ((keys_to_search_for) & item.keys()),
                 # The set will be empty when the keys are not found.

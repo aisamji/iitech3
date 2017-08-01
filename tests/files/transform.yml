@@ -52,9 +52,9 @@ Italics Descriptor:
       - italics: italics
       - ' descriptor should enclose its text in an em tag pair.'
 
-# Underline Descriptor:
-#   body:
-#     -
-#       - 'The '
-#       - underline: underline
-#       - ' descriptor should enclose its text in a u tag pair.'
+Underline Descriptor:
+  body:
+    -
+      - 'The '
+      - underline: underline
+      - ' descriptor should enclose its text in a u tag pair.'

@@ -365,3 +365,13 @@ class TransformTests(unittest.TestCase):
         print(tfrd_para)
         self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
                              'The italics descriptor should be wrapped in an em tag pair.')
+
+    def test_underline_descriptor(self):
+        """Confirm that the underline descriptors are properly generated."""
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <u>underline</u> descriptor should enclose its text in a u tag pair\.\s*</div>' # noqa
+        tfrd_para = self._document._data.find('div', class_='before-underline-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+
+        print(tfrd_para)
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The underline descriptor should be wrapped in a u tag pair.')
