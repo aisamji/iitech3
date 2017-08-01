@@ -340,8 +340,11 @@ class Document:
         a_tag = self._data.new_tag('a')
         if 'anchor' in descriptor:
             default_text = a_tag['name'] = descriptor['anchor']
+        elif 'jump' in descriptor:
+            default_text = descriptor['jump']
+            a_tag['href'] = '#' + descriptor['jump']
         else:
-            raise exceptions.UnknownTransform(descriptor, ['anchor'])
+            raise exceptions.UnknownTransform(descriptor, ['anchor', 'jump'])
 
         try:
             self._set_content(a_tag, descriptor['text'])

@@ -378,10 +378,21 @@ class TransformTests(unittest.TestCase):
                              'The underline descriptor should be wrapped in a u tag pair.')
 
     def test_anchor_descriptor(self):
-        """Confirm that the anchor descripters are properly generated."""
+        """Confirm that the anchor descriptors are properly generated."""
         desired_title = r'<span class="anchor-title" style="font-size: 16px; color: #595959; font-family: Segoe UI;">\s*<a name="bump">\s*Anchor Descriptor\s*</a>\s*</span>' # noqa
         tfrd_title = self._document._data.find('span', class_='anchor-title')
 
         print(tfrd_title)
         self.assertIsNotNone(re.search(desired_title, str(tfrd_title)),
                              'The title should be wrapped in an "a" with a name and transformed to the new title.')
+
+    def test_jump_descriptor(self):
+        """Confirm that the jump descriptors are properly generated."""
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <a href="#bump">jump</a> descriptor should be transformed into an "a" tag the references an anchor\.\s*</div>' # noqa
+        tfrd_para = self._document._data.find('div', class_='before-jump-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+
+        print(tfrd_para)
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The jump descriptor should be transformed into an "a" tag'
+                             ' that jumps to another part of the document.')
