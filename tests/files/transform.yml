@@ -1,8 +1,60 @@
-front:
+# These are all the transformation that should be applied during the Transform Tests
+top:
   image: National/07.14.2017/071417_National.jpg
-  caption:
-    - 'His Highness the Aga Khan addresses senior leaders representing the worldwide '
-    - 'Ismaili community on the occasion of his Diamond Jubilee at his Aiglemont '
-    - 'residence in Gouvieux, France. Photo: '
-    - link: https://the.ismaili/diamond-jubilee/gallery-diamond-jubilee-homage-ceremony
-      text: The.Ismaili
+  caption: The caption can be a content descriptor or a list of content descriptors.
+
+Content Descriptors Test:
+  body:
+    - This is a paragraph specified as a content descriptor.
+    -
+      - 'This is a paragraph specified '
+      - as a list of content descriptors.
+
+Hyperlink Descriptors:
+  body:
+    -
+      - The link descriptor should be transformed into an "a" tag that opens in a new window.
+      - link: https://the.ismaili/diamond-jubilee/gallery-diamond-jubilee-homage-ceremony
+        text: An old link.
+
+File Descriptor:
+  body:
+    -
+      - 'The file descriptor should have the baseurl appended before being transformed '
+      - into an "a" tag that opens in a new window.
+      - file: NorthernTexas/AKSWB Hope.pdf
+        text: An old file.
+
+Email Descriptor:
+  body:
+    -
+      - The email descriptor should be transformed into a proper mailto link.
+      - email: ali.samji@outlook.com
+
+Image Descriptor:
+  body:
+    - image: National/07.14.2017/071417_National.jpg
+      caption:
+        - 'The image descriptor should be transformed '
+        - into a proper img tag aligned via a table tag.
+
+Bold Descriptor:
+  body:
+    -
+      - 'The '
+      - bold: bold
+      - ' descriptor should enclose its text in a strong tag pair.'
+
+Italics Descriptor:
+  body:
+    -
+      - 'The '
+      - italics: italics
+      - ' descriptor should enclose its text in an em tag pair.'
+
+Underline Descriptor:
+  body:
+    -
+      - 'The '
+      - underline: underline
+      - ' descriptor should enclose its text in a u tag pair.'

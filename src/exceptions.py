@@ -15,10 +15,10 @@ class CacheMissException(IITech3Exception):
         super().__init__('{!r:} is not in the cache.'.format(value))
 
 # Document Manipulation exceptions
-class MissingTransformKey(IITech3Exception):
-    """Raised by the Document during transformation when a valid transformation key is not found."""
+class UnknownTransform(IITech3Exception):
+    """Raised by the Document during transformation when a content descriptor is invalid.."""
 
-    def __init__(self, bad_group, allowed_keys):
-        """Create an exception listing the valid transform keys."""
-        super().__init__('{!s:} does not contain a valid transform key. '.format(bad_group) +
-                         'Please choose from {!s:}.'.format(allowed_keys))
+    def __init__(self, bad_descriptor, allowed_descriptors):
+        """Create an exception listing the valid content descriptor."""
+        super().__init__('{!s:} is not a valid content descriptor. '.format(bad_descriptor) +
+                         'Please choose from {!s:}.'.format(allowed_descriptors))

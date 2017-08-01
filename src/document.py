@@ -16,6 +16,9 @@ import exceptions
 class Document:
     """Represents an Ismaili Insight HTML newsletter."""
 
+    # Class constants
+    BASE_URL = 'https://ismailiinsight.org/eNewsletterPro/uploadedimages/000001/'
+
     def __init__(self, code):
         """Initialize a document from the given code."""
         code = str(code)
@@ -35,6 +38,37 @@ class Document:
     def _is_anchor(tag):
         """Determine whether a tag creates a new anchor in the document."""
         return tag.name == 'a' and tag.get('name') is not None
+
+    @staticmethod
+    def _is_article_title(tag):
+        """Determine whether the tag is an article title tag."""
+        if tag.name != 'span' or tag.get('style') is None:
+            return False
+        count = 2
+        count += 1 if 'background-color' in tag['style'] else 0
+        count += 1 if 'font-family' in tag['style'] else 0
+        return (
+            re.search(r'^\s*$', tag.text) is None and
+            'font-size: 16px' in tag['style'] and
+            ('color: #595959' in tag['style'] or 'color: rgb(89, 89, 89)' in tag['style']) and
+            tag['style'].count(';') == count
+        )
+
+    @staticmethod
+    def _is_before_body(tag):
+        """Determine whether the tag preceeds a non empty div tag."""
+        next_div = tag.find_next_sibling('div')
+        if tag.name != 'div' or next_div is None:
+            return False
+        return re.search(r'^\s*$', next_div.text) is None
+
+    @staticmethod
+    def _is_before_return(tag):
+        """Determine whether the tag preceeds a Return to Top link."""
+        next_tag = tag.find_next_sibling(lambda x: isinstance(x, bs4.Tag))
+        if tag.name != 'div' or next_tag.name != 'a' or not next_tag.has_attr('href'):
+            return False
+        return next_tag['href'] == '#ReturnTop'
 
     # review method and helpers
     def _fix_external_link(self, link):
@@ -206,6 +240,11 @@ class Document:
         return result
 
     # Transform method and helpers
+    @staticmethod
+    def _ensure_quoted(url):
+        """Ensure that the given url is quoted."""
+        return requests.compat.quote(requests.compat.unquote(url))
+
     def _get_image_details(self, image_url):
         """Get the proper source, height and width of the image specified by the given partial url."""
         class RequestReader:
@@ -215,8 +254,7 @@ class Document:
             def read(self):
                 return self._object.content
 
-        base_url = 'https://ismailiinsight.org/eNewsletterPro/uploadedimages/000001/'
-        source = image_url if image_url.startswith('http') else (base_url + image_url)
+        source = requests.compat.urljoin(self.BASE_URL, self._ensure_quoted(image_url))
         data = Image.open(RequestReader(requests.get(source)))
         return {
             'source': source,
@@ -224,39 +262,150 @@ class Document:
             'height': data.height
         }
 
-    def _set_contents(self, parent_tag, content_list):
+    def _add_hyperlink(self, parent_tag, descriptor):
+        """Add an 'a' tag as specified by the descriptor."""
+        # Define link and default display text
+        if 'link' in descriptor:
+            link_url = descriptor['link']
+            default_text = descriptor['link']
+        elif 'file' in descriptor:
+            link_url = requests.compat.urljoin(self.BASE_URL,
+                                               self._ensure_quoted(descriptor['file']))
+            default_text = descriptor['file'].rsplit('/')[-1]
+        elif 'email' in descriptor:
+            link_url = 'mailto:' + descriptor['email']
+            default_text = descriptor['email']
+        else:
+            raise exceptions.UnknownTransform(descriptor, ['link', 'file', 'email'])
+
+        # Create 'a' tag that opens in new window
+        a_tag = self._data.new_tag('a', href=link_url, target='_blank')
+        try:
+            self._set_content(a_tag, descriptor['text'])
+        except KeyError:
+            a_tag.string = default_text
+        parent_tag.append(a_tag)
+
+    def _add_image(self, parent_tag, descriptor):
+        """Add a 'table' tag that contains an image and, optionally, a caption."""
+        # Create table tag
+        table_tag = self._data.new_tag('table', align='center',
+                                       style="font-family: 'Segoe UI'; font-size: 13px; color: rgb(89, 89, 89);")
+        tbody_tag = self._data.new_tag('tbody')
+        table_tag.append(tbody_tag)
+
+        # Add Image Row
+        tr_img_tag = self._data.new_tag('tr')
+        td_img_tag = self._data.new_tag('td',
+                                        style='text-align: center; vertical-align: middle;')
+        image_data = self._get_image_details(descriptor['image'])
+        img_tag = self._data.new_tag('img', src=image_data['source'],
+                                     width=image_data['width'],
+                                     height=image_data['height'])
+        td_img_tag.append(img_tag)
+        tr_img_tag.append(td_img_tag)
+        tbody_tag.append(tr_img_tag)
+
+        # Add Caption Row, if applicable
+        try:
+            tr_cap_tag = self._data.new_tag('tr')
+            td_cap_tag = self._data.new_tag('td',
+                                            style='text-align: justify; vertical-align: middle; font-size: 10px;')
+            self._set_content(td_cap_tag, descriptor['caption'])
+            tr_cap_tag.append(td_cap_tag)
+            tbody_tag.append(tr_cap_tag)
+        except KeyError:
+            pass
+        parent_tag.append(table_tag)
+
+    def _add_formatted(self, parent_tag, descriptor):
+        """Add an appropriate text formmating tag according to the descriptor."""
+        if 'bold' in descriptor:
+            format_tag = self._data.new_tag('strong')
+            content_list = descriptor['bold']
+        elif 'italics' in descriptor:
+            format_tag = self._data.new_tag('em')
+            content_list = descriptor['italics']
+        elif 'underline' in descriptor:
+            format_tag = self._data.new_tag('u')
+            content_list = descriptor['underline']
+        else:
+            raise exceptions.UnknownTransform(descriptor, ['bold', 'italics', 'underline'])
+
+        self._set_content(format_tag, content_list)
+        parent_tag.append(format_tag)
+
+    def _set_content(self, parent_tag, content_list):
         """Convert the content_list to proper HTML and enclose with the given parent_tag."""
         if not isinstance(content_list, list):
             content_list = [content_list]
         parent_tag.clear()
         for item in content_list:
             if isinstance(item, dict):
-                if 'link' in item:
-                    link_tag = self._data.new_tag('a',
-                                                  href=item['link'],
-                                                  target='_blank')
-                    try:
-                        link_tag.string = item['text']
-                    except KeyError:
-                        link_tag.string = item['link']
-                    parent_tag.append(link_tag)
+                hyperlinks = {'link', 'file', 'email'}
+                formats = {'bold', 'italics', 'underline'}
+                miscellaneous = {'image'}
+                # Using a set intersection ((keys_to_search_for) & item.keys()),
+                # The set will be empty when the keys are not found.
+                # This takes advantage of the fact that empty == False and non-empty == True.
+                if hyperlinks & item.keys():
+                    self._add_hyperlink(parent_tag, item)
+                elif 'image' in item:
+                    self._add_image(parent_tag, item)
+                elif formats & item.keys():
+                    self._add_formatted(parent_tag, item)
                 else:
-                    raise exceptions.MissingTransformKey(item, ['link'])
+                    raise exceptions.UnknownTransform(item, hyperlinks + formats + miscellaneous)
             else:
-                parent_tag.append(str(item) + '\n')
+                parent_tag.append(str(item))
+
+    def _set_body(self, article_title, paragraph_list):
+        """Overwrite the body of the given article with the new paragraphs."""
+        before_tag = article_title.find_next_sibling(self._is_before_body)
+
+        # Remove all existing paragraphs
+        before_return = article_title.find_next_sibling(self._is_before_return)
+        for tag in list(before_tag.next_siblings):
+            if tag == before_return:
+                break
+            tag.extract()  # decompose does not exist for bs4.NavigableString
+
+        # Add each paragraph in turn
+        not_first_paragraph = False
+        for descriptor in paragraph_list:
+            if not_first_paragraph:
+                before_tag.append(self._data.new_tag('br'))
+            paragraph = self._data.new_tag('div',
+                                           style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
+            self._set_content(paragraph, descriptor)
+            before_tag.insert_after(paragraph)
+            not_first_paragraph = True
+            before_tag = paragraph
 
     def apply(self, transforms):
         """Apply a transformation to the document (eg make all national changes to the document)."""
-        if 'front' in transforms:
+        if 'top' in transforms:
             front_image = self._data.find('img', src=re.compile('^https://www\.ismailiinsight\.org/enewsletterpro/public_templates/IsmailiInsight/images/20121101Top_1\.jpg$|National')) # noqa
             front_caption = front_image.parent.div
 
-            image_data = self._get_image_details(transforms['front']['image'])
+            image_data = self._get_image_details(transforms['top']['image'])
             front_image['src'] = image_data['source']
             front_image['width'] = image_data['width']
             front_image['height'] = image_data['height']
-            self._set_contents(front_caption, transforms['front']['caption'])
-            del transforms['front']
+            self._set_content(front_caption, transforms['top']['caption'])
+            del transforms['top']
+
+        articles = self._data.find_all(self._is_article_title)
+        for art in articles:
+            title = art.text.strip()
+            if title not in transforms:
+                continue
+            try:
+                self._set_body(art, transforms[title]['body'])
+            except KeyError:
+                pass
+            del transforms[title]
+
         return transforms
 
     # magic methods
