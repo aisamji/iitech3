@@ -287,7 +287,8 @@ class TransformTests(unittest.TestCase):
             'Image Descriptor',
             'Bold Descriptor',
             'Italics Descriptor',
-            'Underline Descriptor'
+            'Underline Descriptor',
+            'Anchor Descriptor'
         ]
         found_articles = list(map(lambda x: x.text.strip(),
                                   self._document._data.find_all(self._document._is_article_title)))
@@ -375,3 +376,12 @@ class TransformTests(unittest.TestCase):
         print(tfrd_para)
         self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
                              'The underline descriptor should be wrapped in a u tag pair.')
+
+    def test_anchor_descriptor(self):
+        """Confirm that the anchor descripters are properly generated."""
+        desired_title = r'<span class="anchor-title" style="font-size: 16px; color: #595959; font-family: Segoe UI;">\s*<a name="bump">\s*Anchor Descriptor\s*</a>\s*</span>' # noqa
+        tfrd_title = self._document._data.find('span', class_='anchor-title')
+
+        print(tfrd_title)
+        self.assertIsNotNone(re.search(desired_title, str(tfrd_title)),
+                             'The title should be wrapped in an "a" with a name and transformed to the new title.')

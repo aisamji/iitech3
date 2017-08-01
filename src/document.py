@@ -335,6 +335,20 @@ class Document:
         self._set_content(format_tag, content_list)
         parent_tag.append(format_tag)
 
+    def _add_navigation(self, parent_tag, descriptor):
+        """Add an 'a' tag that drops an anchor or jumps to one."""
+        a_tag = self._data.new_tag('a')
+        if 'anchor' in descriptor:
+            default_text = a_tag['name'] = descriptor['anchor']
+        else:
+            raise exceptions.UnknownTransform(descriptor, ['anchor'])
+
+        try:
+            self._set_content(a_tag, descriptor['text'])
+        except KeyError:
+            a_tag.string = default_text
+        parent_tag.append(a_tag)
+
     def _set_content(self, parent_tag, content_list):
         """Convert the content_list to proper HTML and enclose with the given parent_tag."""
         if not isinstance(content_list, list):
@@ -344,7 +358,7 @@ class Document:
             if isinstance(item, dict):
                 hyperlinks = {'link', 'file', 'email'}
                 formats = {'bold', 'italics', 'underline'}
-                miscellaneous = {'image'}
+                navigation = {'jump', 'anchor'}
                 # Using a set intersection ((keys_to_search_for) & item.keys()),
                 # The set will be empty when the keys are not found.
                 # This takes advantage of the fact that empty == False and non-empty == True.
@@ -354,8 +368,10 @@ class Document:
                     self._add_image(parent_tag, item)
                 elif formats & item.keys():
                     self._add_formatted(parent_tag, item)
+                elif navigation & item.keys():
+                    self._add_navigation(parent_tag, item)
                 else:
-                    raise exceptions.UnknownTransform(item, hyperlinks + formats + miscellaneous)
+                    raise exceptions.UnknownTransform(item, hyperlinks + formats + navigation + {'image'})
             else:
                 parent_tag.append(str(item))
 
@@ -402,6 +418,10 @@ class Document:
                 continue
             try:
                 self._set_body(art, transforms[title]['body'])
+            except KeyError:
+                pass
+            try:
+                self._set_content(art, transforms[title]['title'])
             except KeyError:
                 pass
             del transforms[title]

@@ -58,3 +58,8 @@ Underline Descriptor:
       - 'The '
       - underline: underline
       - ' descriptor should enclose its text in a u tag pair.'
+
+Jump Descriptor:
+  title:
+    anchor: bump
+    text: Anchor Descriptor
