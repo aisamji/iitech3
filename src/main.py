@@ -4,6 +4,7 @@
 # Imports
 import argparse
 from requests.status_codes import _codes as url_statuses
+import yaml
 import document
 import pasteboard
 import cache
@@ -18,6 +19,8 @@ REVIEW_ACT = 'review'
 REVIEW_DESC = 'Review the HTML template for correctness before sending it out.'
 REPAIR_ACT = 'repair'
 REPAIR_DESC = "Repair the HTML template if it isn't loading correctly."
+APPLY_ACT = 'apply'
+APPLY_DESC = 'Apply a transform to the HTML template. This does not review or repair it.'
 
 EMAIL_TYPE = 'email'
 WEBPAGE_TYPE = 'webpage'
@@ -36,8 +39,8 @@ def get_code(path):
     if path is None:
         return pasteboard.get()
     else:
-        with open(path, 'r', encoding='UTF-8') as file:
-            code = file.read()
+        with open(path, 'r', encoding='UTF-8') as html_file:
+            code = html_file.read()
         return code
 
 
@@ -46,8 +49,8 @@ def set_code(path, doc):
     if path is None:
         pasteboard.set(doc)
     else:
-        with open(path, 'w', encoding='UTF-8') as file:
-            file.write(str(doc))
+        with open(path, 'w', encoding='UTF-8') as html_file:
+            html_file.write(str(doc))
 
 
 def review(args):
@@ -83,6 +86,21 @@ def repair(args):
         'Background fix {:s}applied.'.format('not ' if summary['background'] == 0 else ''),
         sep='\n'
     )
+    set_code(args.file, html_doc)
+
+
+def apply(args):
+    """Apply a transform to an HTML template."""
+    html_doc = document.Document(get_code(args.file))
+    with open(args.transform_file, 'r', encoding='UTF-8') as tfr_file:
+        tfr_json = yaml.load(tfr_file)
+    not_applied = html_doc.apply(tfr_json)
+
+    if len(not_applied) == 0:
+        print('All transforms applied.')
+    else:
+        print('The following transforms could not be applied:')
+        print(yaml.dump(not_applied))
     set_code(args.file, html_doc)
 
 
@@ -139,7 +157,8 @@ def main(args=None):
                                       help='{:6s}\t{:s}\n'.format(REVIEW_ACT, REVIEW_DESC) +
                                            '{:6s}\t{:s}\n'.format(REPAIR_ACT, REPAIR_DESC) +
                                            '{:6s}\t{:s}\n'.format(LOOKUP_ACT, LOOKUP_DESC) +
-                                           '{:6s}\t{:s}'.format(MARK_ACT, MARK_DESC))
+                                           '{:6s}\t{:s}\n'.format(MARK_ACT, MARK_DESC) +
+                                           '{:5s}\t{:s}'.format(APPLY_ACT, APPLY_DESC))
 
     # Define review parser
     review_cmd = base_childs.add_parser(REVIEW_ACT, prog='{:s} {:s}'.format(PROG_NAME, REVIEW_ACT),
@@ -277,6 +296,22 @@ def main(args=None):
     mark_url_gen_grp.add_argument('url', action='store', type=str, help='The url to mark.')
     mark_url_gen_grp.add_argument('-h', '--help', action='help',
                                   help=HELP_HELP)
+
+    # Define apply parser
+    apply_cmd = base_childs.add_parser(APPLY_ACT, prog='{:s} {:s}'.format(PROG_NAME, APPLY_ACT),
+                                       description=APPLY_DESC,
+                                       usage='%(prog)s <transform_file> <target>')
+    apply_cmd._optionals.title = 'options'
+    apply_cmd.set_defaults(func=apply)
+    apply_cmd.add_argument('transform_file', action='store', type=str,
+                           help='The yaml file that describes the transform to apply.')
+    apply_target_grp = apply_cmd.add_argument_group(title='targets')
+    apply_target_mex = apply_target_grp.add_mutually_exclusive_group(required=True)
+    apply_target_mex.add_argument('file', action='store', type=str, nargs='?',
+                                  help='The file that contains the HTML code to transform.')
+    apply_target_mex.add_argument('-p', '--pasteboard', action='store_const',
+                                  dest='file', const=None,
+                                  help='Specifies that the HTML code to transform is on the pasteboard.')
 
     # Parse args
     definition = base.parse_args(args)
