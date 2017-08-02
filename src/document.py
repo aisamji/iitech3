@@ -400,28 +400,27 @@ class Document:
             else:
                 parent_tag.append(str(item))
 
-    def _set_body(self, article_title, paragraph_list):
-        """Overwrite the body of the given article with the new paragraphs."""
-        before_tag = article_title.find_next_sibling(self._is_before_body)
-
-        # Remove all existing paragraphs
-        before_return = article_title.find_next_sibling(self._is_before_return)
-        for tag in list(before_tag.next_siblings):
-            if tag == before_return:
+    def _clear_body(self, before_body, after_body):
+        """Clear the body of all pre-existing content."""
+        for tag in list(before_body.next_siblings):
+            if tag == after_body:
                 break
             tag.extract()  # decompose does not exist for bs4.NavigableString
 
-        # Add each paragraph in turn
+    def _add_paragraphs(self, paragraph_list, reference_tag, action='replace'):
+        """Add the paragraphs after before_body or before after_body. Only one is required."""
         not_first_paragraph = False
         for descriptor in paragraph_list:
-            if not_first_paragraph:
-                before_tag.append(self._data.new_tag('br'))
-            paragraph = self._data.new_tag('div',
-                                           style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
-            self._set_content(paragraph, descriptor)
-            before_tag.insert_after(paragraph)
-            not_first_paragraph = True
-            before_tag = paragraph
+            if action == 'replace' and not_first_paragraph:
+                reference_tag.append(self._data.new_tag('br'))
+            paragraph_tag = self._data.new_tag('div',
+                                               style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
+            self._set_content(paragraph_tag, descriptor)
+            if action in ('replace', 'prepend'):
+                reference_tag.insert_after(paragraph_tag)
+                reference_tag = paragraph_tag
+            if action == 'replace':
+                not_first_paragraph = True
 
     def apply(self, transforms):
         """Apply a transformation to the document (eg make all national changes to the document)."""
@@ -442,7 +441,11 @@ class Document:
             if title not in transforms:
                 continue
             try:
-                self._set_body(art, transforms[title]['body'])
+                before_body = art.find_next_sibling(self._is_before_body)
+                after_body = art.find_next_sibling(self._is_before_return)
+                if transforms[title]['replace'] is not None:
+                    self._clear_body(before_body, after_body)
+                    self._add_paragraphs(transforms[title]['replace'], before_body)
             except KeyError:
                 pass
             try:
