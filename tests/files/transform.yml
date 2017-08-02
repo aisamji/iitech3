@@ -96,3 +96,12 @@ Append Specifier:
   append:
     -
       - The append specifier should only add a paragraph after the existing content.
+
+Left and Right Specifiers:
+  left:
+    -
+      - Both specifiers are simply a list of paragraphs just like with the other specifiers.
+      - This is usually used to provide an image beside the text instead of on top of it.
+  right:
+    - Multiple paragraphs should be seperated by 2 br tags instead of one.
+    - Like this.

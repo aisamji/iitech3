@@ -419,21 +419,57 @@ class Document:
                                                style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
             self._set_content(paragraph_tag, descriptor)
 
-            if action == 'replace':
+            # Add a br tag if and where appropriate
+            if action in ('replace', 'left', 'right'):
                 if not_first_paragraph:
                     reference_tag.append(self._data.new_tag('br'))
-                else:
-                    not_first_paragraph = True
             elif action == 'prepend':
                 paragraph_tag.append(self._data.new_tag('br'))
             else:  # action == 'append'
                 paragraph_tag.insert(0, self._data.new_tag('br'))
 
+            # Add a second br tag for the side-by-side specifiers
+            if action in ('left', 'right') and not_first_paragraph:
+                reference_tag.append(self._data.new_tag('br'))
+
+            # Use the action to determine the relation between the paragraph and the reference
             if action in ('replace', 'prepend'):
                 reference_tag.insert_after(paragraph_tag)
                 reference_tag = paragraph_tag
-            else:  # action == 'append'
+            elif action == 'append':
                 reference_tag.insert_before(paragraph_tag)
+            else:  # action in ('left', 'right')
+                if not_first_paragraph:
+                    reference_tag.insert_after(paragraph_tag)
+                    reference_tag = paragraph_tag
+                else:
+                    reference_tag.append(paragraph_tag)
+                    reference_tag = paragraph_tag
+
+            not_first_paragraph = True
+
+    def _add_left_right(self, before_body, transform_group):
+        """Add the content into a left column and a right column as specified by the transform group."""
+        # Set content for each column
+        left_td_tag = self._data.new_tag('td', style='vertical-align: middle;')
+        self._add_paragraphs(left_td_tag, transform_group, 'left')
+        right_td_tag = self._data.new_tag('td', style='vertical-align: middle;')
+        self._add_paragraphs(right_td_tag, transform_group, 'right')
+
+        # Create rest of the table and add it after the before_body tag
+        tr_tag = self._data.new_tag('tr')
+        tr_tag.append(left_td_tag)
+        tr_tag.append(right_td_tag)
+
+        tbody_tag = self._data.new_tag('tbody')
+        tbody_tag.append(tr_tag)
+
+        table_tag = self._data.new_tag('table',
+                                       align='center',
+                                       cellpadding='3',
+                                       cellspacing='0')
+        table_tag.append(tbody_tag)
+        before_body.insert_after(table_tag)
 
     def apply(self, transforms):
         """Apply a transformation to the document (eg make all national changes to the document)."""
@@ -460,24 +496,34 @@ class Document:
             before_body = art.find_next_sibling(self._is_before_body)
             after_body = art.find_next_sibling(self._is_before_return)
 
-            if 'replace' in transforms[title]:
+            if {'left', 'right'} & transforms[title].keys():
                 self._clear_body(before_body, after_body)
-                self._add_paragraphs(before_body, transforms[title], 'replace')
-            try:
-                self._add_paragraphs(before_body, transforms[title], 'prepend')
-            except KeyError:
-                pass
-            try:
-                self._add_paragraphs(after_body, transforms[title], 'append')
-            except KeyError:
-                pass
+                self._add_left_right(before_body, transforms[title])
+            else:
+                if 'replace' in transforms[title]:
+                    self._clear_body(before_body, after_body)
+                    self._add_paragraphs(before_body, transforms[title], 'replace')
+                    del transforms[title]['replace']
+                try:
+                    self._add_paragraphs(before_body, transforms[title], 'prepend')
+                    del transforms[title]['prepend']
+                except KeyError:
+                    pass
+                try:
+                    self._add_paragraphs(after_body, transforms[title], 'append')
+                    del transforms[title]['append']
+                except KeyError:
+                    pass
 
             # Transform title
             try:
                 self._set_content(art, transforms[title]['title'])
+                del transforms[title]['title']
             except KeyError:
                 pass
-            del transforms[title]
+
+            if len(transforms[title]) == 0:
+                del transforms[title]
 
         return transforms
 
