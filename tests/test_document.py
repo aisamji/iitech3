@@ -249,8 +249,8 @@ class TransformTests(unittest.TestCase):
 
     def test_top_transform(self):
         """Confirm that the new front image and caption is applied on the boilerplate picture."""
-        desired_img = r'<img alt="##TrackClick##" class="top-image" height="267" src="https://ismailiinsight\.org/eNewsletterPro/uploadedimages/000001/National/07\.14\.2017/071417_National\.jpg" width="400"/>' # noqa
-        desired_cap = r'<div class="top-caption" style="font-family: Segoe UI; font-size: 10px; color: #595959; text-align: justify;">\s*The caption can be a content descriptor or a list of content descriptors\.\s*</div>' # noqa
+        desired_img = r'<img alt="##TrackClick##" class="top-image" height="267" src="https://ismailiinsight\.org/eNewsletterPro/uploadedimages/000001/National/07\.14\.2017/071417_National\.jpg" width="400"/>'  # noqa
+        desired_cap = r'<div class="top-caption" style="font-family: Segoe UI; font-size: 10px; color: #595959; text-align: justify;">\s*The caption can be a content descriptor or a list of content descriptors\.\s*</div>'  # noqa
 
         tfrd_img = self._document._data.find('img', class_='top-image')
         tfrd_cap = self._document._data.find('div', class_='top-caption')
@@ -263,8 +263,8 @@ class TransformTests(unittest.TestCase):
 
     def test_article_transform(self):
         """Confirm that a paragraph list item can be a content descriptor or a list of content descriptors."""
-        desired_first_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*This is a paragraph specified as a content descriptor\.\s*<br/>\s*</div>' # noqa
-        desired_second_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">This is a paragraph specified\s*as a list of content descriptors\.\s*</div>' # noqa
+        desired_first_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*This is a paragraph specified as a content descriptor\.\s*<br/>\s*</div>'  # noqa
+        desired_second_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">This is a paragraph specified\s*as a list of content descriptors\.\s*</div>'  # noqa
 
         tfrd_first_para = self._document._data.find('div', class_='before-content-descriptor-para')
         tfrd_first_para = tfrd_first_para.find_next_sibling('div')
@@ -277,7 +277,7 @@ class TransformTests(unittest.TestCase):
         self.assertNotIn('Content Descriptors Test', self._remaining,
                          'The content descriptors transform should be marked as completed.')
 
-    def test_article_selection(self):
+    def test_article_selector(self):
         """Confirm that only articles are selected."""
         all_articles = [
             'Content Descriptors Test',
@@ -290,7 +290,9 @@ class TransformTests(unittest.TestCase):
             'Underline Descriptor',
             'Anchor Descriptor',
             'Numbers Descriptor',
-            'Bullets Descriptor'
+            'Bullets Descriptor',
+            'Prepend Specifier',
+            'Append Specifier'
         ]
         found_articles = list(map(lambda x: x.text.strip(),
                                   self._document._data.find_all(self._document._is_article_title)))
@@ -300,7 +302,7 @@ class TransformTests(unittest.TestCase):
 
     def test_link_descriptor(self):
         """Confirm that link descriptors are properly generated."""
-        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The link descriptor should be transformed into an "a" tag that opens in a new window\.\s*<a href="https://the\.ismaili/diamond-jubilee/gallery-diamond-jubilee-homage-ceremony" target="_blank">\s*An old link\.\s*</a>\s*</div>' # noqa
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The link descriptor should be transformed into an "a" tag that opens in a new window\.\s*<a href="https://the\.ismaili/diamond-jubilee/gallery-diamond-jubilee-homage-ceremony" target="_blank">\s*An old link\.\s*</a>\s*</div>'  # noqa
         tfrd_para = self._document._data.find('div', class_='before-link-para')
         tfrd_para = tfrd_para.find_next_sibling('div')
 
@@ -310,7 +312,7 @@ class TransformTests(unittest.TestCase):
 
     def test_file_descriptor(self):
         """Confirm that file descriptors are properly generated."""
-        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The file descriptor should have the baseurl appended before being transformed\s*into an "a" tag that opens in a new window\.\s*<a href="https://ismailiinsight\.org/eNewsletterPro/uploadedimages/000001/NorthernTexas/AKSWB%20Hope\.pdf" target="_blank">\s*An old file\.\s*</a>\s*</div>' # noqa
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The file descriptor should have the baseurl appended before being transformed\s*into an "a" tag that opens in a new window\.\s*<a href="https://ismailiinsight\.org/eNewsletterPro/uploadedimages/000001/NorthernTexas/AKSWB%20Hope\.pdf" target="_blank">\s*An old file\.\s*</a>\s*</div>'  # noqa
         tfrd_para = self._document._data.find('div', class_='before-file-para')
         tfrd_para = tfrd_para.find_next_sibling('div')
 
@@ -321,7 +323,7 @@ class TransformTests(unittest.TestCase):
 
     def test_email_descriptor(self):
         """Confirm that the email descriptors are properly generated."""
-        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The email descriptor should be transformed into a proper mailto link\.<a href="mailto:ali\.samji@outlook\.com" target="_blank">ali\.samji@outlook\.com</a>\s*</div>' # noqa
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The email descriptor should be transformed into a proper mailto link\.<a href="mailto:ali\.samji@outlook\.com" target="_blank">ali\.samji@outlook\.com</a>\s*</div>'  # noqa
         tfrd_para = self._document._data.find('div', class_='before-email-para')
         tfrd_para = tfrd_para.find_next_sibling('div')
 
@@ -331,7 +333,7 @@ class TransformTests(unittest.TestCase):
 
     def test_image_descriptor(self):
         """Confirm that the image descriptors are properly generated."""
-        desired_img_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*' # noqa
+        desired_img_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
                             r'<table align="center" style="font-family: \'Segoe UI\';'
                             r' font-size: 13px; color: rgb\(89, 89, 89\);">\s*<tbody>\s*<tr>\s*'
                             r'<td style="text-align: center; vertical-align: middle;">\s*<img height="267"'
@@ -351,7 +353,7 @@ class TransformTests(unittest.TestCase):
 
     def test_bold_descriptor(self):
         """Confirm that the bold descriptors are properly generated."""
-        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <strong>bold</strong> descriptor should enclose its text in a strong tag pair\.\s*</div>' # noqa
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <strong>bold</strong> descriptor should enclose its text in a strong tag pair\.\s*</div>'  # noqa
         tfrd_para = self._document._data.find('div', class_='before-bold-para')
         tfrd_para = tfrd_para.find_next_sibling('div')
 
@@ -361,7 +363,7 @@ class TransformTests(unittest.TestCase):
 
     def test_italics_descriptor(self):
         """Confirm that the italics descriptors are properly generated."""
-        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <em>italics</em> descriptor should enclose its text in an em tag pair\.\s*</div>' # noqa
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <em>italics</em> descriptor should enclose its text in an em tag pair\.\s*</div>'  # noqa
         tfrd_para = self._document._data.find('div', class_='before-italics-para')
         tfrd_para = tfrd_para.find_next_sibling('div')
 
@@ -371,7 +373,7 @@ class TransformTests(unittest.TestCase):
 
     def test_underline_descriptor(self):
         """Confirm that the underline descriptors are properly generated."""
-        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <u>underline</u> descriptor should enclose its text in a u tag pair\.\s*</div>' # noqa
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <u>underline</u> descriptor should enclose its text in a u tag pair\.\s*</div>'  # noqa
         tfrd_para = self._document._data.find('div', class_='before-underline-para')
         tfrd_para = tfrd_para.find_next_sibling('div')
 
@@ -381,7 +383,7 @@ class TransformTests(unittest.TestCase):
 
     def test_anchor_descriptor(self):
         """Confirm that the anchor descriptors are properly generated."""
-        desired_title = r'<span class="anchor-title" style="font-size: 16px; color: #595959; font-family: Segoe UI;">\s*<a name="bump">\s*Anchor Descriptor\s*</a>\s*</span>' # noqa
+        desired_title = r'<span class="anchor-title" style="font-size: 16px; color: #595959; font-family: Segoe UI;">\s*<a name="bump">\s*Anchor Descriptor\s*</a>\s*</span>'  # noqa
         tfrd_title = self._document._data.find('span', class_='anchor-title')
 
         print(tfrd_title)
@@ -390,7 +392,7 @@ class TransformTests(unittest.TestCase):
 
     def test_jump_descriptor(self):
         """Confirm that the jump descriptors are properly generated."""
-        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <a href="#bump">jump</a> descriptor should be transformed into an "a" tag the references an anchor\.\s*</div>' # noqa
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <a href="#bump">jump</a> descriptor should be transformed into an "a" tag the references an anchor\.\s*</div>'  # noqa
         tfrd_para = self._document._data.find('div', class_='before-jump-para')
         tfrd_para = tfrd_para.find_next_sibling('div')
 
@@ -401,7 +403,7 @@ class TransformTests(unittest.TestCase):
 
     def test_numbers_descriptor(self):
         """Confirm that the numbers descriptors are properly generated."""
-        desired_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<ol>\s*' # noqa
+        desired_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<ol>\s*'  # noqa
                         r'<li>\s*The numbers descriptor should be transformed into a numbered list\.\s*</li>\s*'
                         r'<li>\s*Each item can be a single content descriptor or a '
                         r'list of content descriptors\.\s*</li>\s*</ol>\s*</div>')
@@ -414,7 +416,7 @@ class TransformTests(unittest.TestCase):
 
     def test_bullets_descriptor(self):
         """Confirm that the bullets descriptors are properly generated."""
-        desired_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<ul>\s*' # noqa
+        desired_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<ul>\s*'  # noqa
                         r'<li>\s*The bullets descriptor should be transformed into a bulleted list\.\s*</li>\s*'
                         r'<li>\s*Each item can be a single content descriptor or a '
                         r'list of content descriptors\.\s*</li>\s*</ul>\s*</div>')
@@ -424,3 +426,40 @@ class TransformTests(unittest.TestCase):
         print(tfrd_para)
         self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
                              'The bullets descriptor should be transformed into an unordered list.')
+
+    def test_prepend_specifier(self):
+        """Confirm that the prepend specifier only prepends content to the existing content."""
+        desired_first_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
+                              r'Usually used to prepend images\.\s*<br/>\s*'
+                              r'</div>')
+        desired_second_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
+                               r'This paragraph should not change\.\s*'
+                               r'</div>')
+        tfrd_first_para = self._document._data.find('div', class_='before-prepend-para')
+        tfrd_first_para = tfrd_first_para.find_next_sibling('div')
+        tfrd_second_para = tfrd_first_para.find_next_sibling('div')
+
+        print(tfrd_first_para, tfrd_second_para, sep='\n\n')
+        self.assertIsNotNone(re.search(desired_first_para, str(tfrd_first_para)),
+                             'A paragraph should be added before the existing paragraph.')
+        self.assertIsNotNone(re.search(desired_second_para, str(tfrd_second_para)),
+                             'The second paragraph should not be transformed.')
+
+    def test_append_specifier(self):
+        """Confirm that the append specifier only appends content to the existing content."""
+        desired_first_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
+                              r'This paragraph should not change\.\s*'
+                              r'</div>')
+        desired_second_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
+                               r'\s*<br/>\s*'
+                               r'The append specifier should only add a paragraph after the existing content\.\s*'
+                               r'</div>')
+        tfrd_first_para = self._document._data.find('div', class_='before-append-para')
+        tfrd_first_para = tfrd_first_para.find_next_sibling('div')
+        tfrd_second_para = tfrd_first_para.find_next_sibling('div')
+
+        print(tfrd_first_para, tfrd_second_para, sep='\n\n')
+        self.assertIsNotNone(re.search(desired_first_para, str(tfrd_first_para)),
+                             'The first paragraph should not be transformed.')
+        self.assertIsNotNone(re.search(desired_second_para, str(tfrd_second_para)),
+                             'A paragraph should be added after the existing paragraph.')
