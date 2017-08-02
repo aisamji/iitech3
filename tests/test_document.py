@@ -288,7 +288,9 @@ class TransformTests(unittest.TestCase):
             'Bold Descriptor',
             'Italics Descriptor',
             'Underline Descriptor',
-            'Anchor Descriptor'
+            'Anchor Descriptor',
+            'Numbers Descriptor',
+            'Bullets Descriptor'
         ]
         found_articles = list(map(lambda x: x.text.strip(),
                                   self._document._data.find_all(self._document._is_article_title)))
@@ -396,3 +398,16 @@ class TransformTests(unittest.TestCase):
         self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
                              'The jump descriptor should be transformed into an "a" tag'
                              ' that jumps to another part of the document.')
+
+    def test_numbers_descriptor(self):
+        """Confirm that the numbers descriptors are properly generated."""
+        desired_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<ol>\s*' # noqa
+                        r'<li>\s*The numbers descriptor should be transformed into a list of items\.\s*</li>\s*'
+                        r'<li>\s*Each item can be a single content descriptor or a '
+                        r'list of content descriptors\.\s*</li>\s*</ol>\s*</div>')
+        tfrd_para = self._document._data.find('div', class_='before-numbers-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+
+        print(tfrd_para)
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The numbers descriptor should be transformed into an ordered list.')
