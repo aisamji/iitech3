@@ -291,7 +291,8 @@ class TransformTests(unittest.TestCase):
             'Anchor Descriptor',
             'Numbers Descriptor',
             'Bullets Descriptor',
-            'Prepend Specifier'
+            'Prepend Specifier',
+            'Append Specifier'
         ]
         found_articles = list(map(lambda x: x.text.strip(),
                                   self._document._data.find_all(self._document._is_article_title)))
@@ -440,6 +441,24 @@ class TransformTests(unittest.TestCase):
 
         print(tfrd_first_para, tfrd_second_para, sep='\n\n')
         self.assertIsNotNone(re.search(desired_first_para, str(tfrd_first_para)),
-                             'The first paragraph should be added before the existing paragraph.')
+                             'A paragraph should be added before the existing paragraph.')
         self.assertIsNotNone(re.search(desired_second_para, str(tfrd_second_para)),
                              'The second paragraph should not be transformed.')
+
+    def test_append_specifier(self):
+        """Confirm that the append specifier only appends content to the existing content."""
+        desired_first_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
+                              r'This paragraph should not change\.\s*'
+                              r'</div>')
+        desired_second_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
+                               r'The append specifier should not transform the existing content  but it should only add its content after the existing content\.\s*'  # noqa
+                               r'</div>')
+        tfrd_first_para = self._document._data.find('div', class_='before-append-para')
+        tfrd_first_para = tfrd_first_para.find_next_sibling('div')
+        tfrd_second_para = tfrd_first_para.find_next_sibling('div')
+
+        print(tfrd_first_para, tfrd_second_para, sep='\n\n')
+        self.assertIsNotNone(re.search(desired_first_para, str(tfrd_first_para)),
+                             'The first paragraph should not be transformed.')
+        self.assertIsNotNone(re.search(desired_second_para, str(tfrd_second_para)),
+                             'A paragraph should be added after the existing paragraph.')

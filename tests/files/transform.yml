@@ -91,3 +91,9 @@ Bullets Descriptor:
 Prepend Specifier:
   prepend:
     - Usually used to prepend images.
+
+Append Specifier:
+  append:
+    -
+      - The append specifier should not transform the existing content
+      - " but it should only add its content after the existing content."
