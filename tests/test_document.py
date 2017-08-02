@@ -292,7 +292,8 @@ class TransformTests(unittest.TestCase):
             'Numbers Descriptor',
             'Bullets Descriptor',
             'Prepend Specifier',
-            'Append Specifier'
+            'Append Specifier',
+            'Left and Right Specifiers'
         ]
         found_articles = list(map(lambda x: x.text.strip(),
                                   self._document._data.find_all(self._document._is_article_title)))
@@ -463,3 +464,22 @@ class TransformTests(unittest.TestCase):
                              'The first paragraph should not be transformed.')
         self.assertIsNotNone(re.search(desired_second_para, str(tfrd_second_para)),
                              'A paragraph should be added after the existing paragraph.')
+
+    def test_left_and_right_specifiers(self):
+        """Confirm that the left and right specifiers replace the content with a 2x1 table."""
+        desired_content = (r'<table align="center" cellpadding="3" cellspacing="0">\s*<tbody>\s*<tr>\s*'
+                           r'<td style="vertical-align: middle;">\s*'
+                           r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
+                           r'Both specifiers are simply a list of paragraphs just like with the other specifiers\.'
+                           r'This is usually used to provide an image beside the text instead of on top of it\.\s*'
+                           r'</div>\s*</td>\s*<td style="vertical-align: middle;">\s*'
+                           r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
+                           r'Multiple paragraphs should be seperated by 2 br tags instead of one\.\s*<br/>\s*<br/>\s*</div>\s*'  # noqa
+                           r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*Like this\.\s*'  # noqa
+                           r'</div>\s*</td>\s*</tr>\s*</tbody>\s*</table>')
+        tfrd_content = self._document._data.find('div', class_='before-lr-para')
+        tfrd_content = tfrd_content.find_next_sibling('table')
+
+        print(tfrd_content)
+        self.assertIsNotNone(re.search(desired_content, str(tfrd_content)),
+                             'The content should be transformed into a side-by-side table tag containing the content.')
