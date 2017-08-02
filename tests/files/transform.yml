@@ -69,3 +69,21 @@ Jump Descriptor:
       - jump: bump
         text: jump
       - ' descriptor should be transformed into an "a" tag the references an anchor.'
+
+Numbers Descriptor:
+  body:
+    - numbers:
+      - The numbers descriptor should be transformed into a numbered list.
+      -
+        - Each item can be a single content descriptor
+        - ' or a '
+        - list of content descriptors.
+
+Bullets Descriptor:
+  body:
+    - bullets:
+      - The bullets descriptor should be transformed into a bulleted list.
+      -
+        - Each item can be a single content descriptor
+        - ' or a '
+        - list of content descriptors.

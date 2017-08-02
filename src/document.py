@@ -352,6 +352,23 @@ class Document:
             a_tag.string = default_text
         parent_tag.append(a_tag)
 
+    def _add_list(self, parent_tag, descriptor):
+        """Add an ol or a ul tag representing the list specified by the descriptor."""
+        if 'numbers' in descriptor:
+            list_tag = self._data.new_tag('ol')
+            list_items = descriptor['numbers']
+        elif 'bullets' in descriptor:
+            list_tag = self._data.new_tag('ul')
+            list_items = descriptor['bullets']
+        else:
+            raise exceptions.UnknownTransform(descriptor, ['numbers', 'bullets'])
+
+        for item in list_items:
+            item_tag = self._data.new_tag('li')
+            self._set_content(item_tag, item)
+            list_tag.append(item_tag)
+        parent_tag.append(list_tag)
+
     def _set_content(self, parent_tag, content_list):
         """Convert the content_list to proper HTML and enclose with the given parent_tag."""
         if not isinstance(content_list, list):
@@ -362,7 +379,8 @@ class Document:
                 hyperlinks = {'link', 'file', 'email'}
                 formats = {'bold', 'italics', 'underline'}
                 navigation = {'jump', 'anchor'}
-                # Using a set intersection ((keys_to_search_for) & item.keys()),
+                lists = {'numbers', 'bullets'}
+                # Using set intersection ((keys_to_search_for) & item.keys()),
                 # The set will be empty when the keys are not found.
                 # This takes advantage of the fact that empty == False and non-empty == True.
                 if hyperlinks & item.keys():
@@ -373,8 +391,12 @@ class Document:
                     self._add_formatted(parent_tag, item)
                 elif navigation & item.keys():
                     self._add_navigation(parent_tag, item)
+                elif lists & item.keys():
+                    self._add_list(parent_tag, item)
                 else:
-                    raise exceptions.UnknownTransform(item, hyperlinks + formats + navigation + {'image'})
+                    raise exceptions.UnknownTransform(item,
+                                                      hyperlinks + formats + navigation +
+                                                      lists + {'image'})
             else:
                 parent_tag.append(str(item))
 
