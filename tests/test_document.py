@@ -263,7 +263,8 @@ class TransformTests(unittest.TestCase):
 
     def test_article_transform(self):
         """Confirm that a paragraph list item can be a content descriptor or a list of content descriptors."""
-        desired_first_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*This is a paragraph specified as a content descriptor\.\s*<br/>\s*</div>'  # noqa
+        desired_first_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*This is a paragraph specified as a content descriptor\.\s*'  # noqa
+                              r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<br/>\s*</div>\s*</div>')  # noqa
         desired_second_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">This is a paragraph specified\s*as a list of content descriptors\.\s*</div>'  # noqa
 
         tfrd_first_para = self._document._data.find('div', class_='before-content-descriptor-para')
@@ -431,7 +432,8 @@ class TransformTests(unittest.TestCase):
     def test_prepend_specifier(self):
         """Confirm that the prepend specifier only prepends content to the existing content."""
         desired_first_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
-                              r'Usually used to prepend images\.\s*<br/>\s*'
+                              r'Usually used to prepend images\.\s*'
+                              r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<br/>\s*</div>\s*'  # noqa
                               r'</div>')
         desired_second_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
                                r'This paragraph should not change\.\s*'
@@ -452,7 +454,7 @@ class TransformTests(unittest.TestCase):
                               r'This paragraph should not change\.\s*'
                               r'</div>')
         desired_second_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
-                               r'\s*<br/>\s*'
+                               r'\s*<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<br/>\s*</div>\s*'  # noqa
                                r'The append specifier should only add a paragraph after the existing content\.\s*'
                                r'</div>')
         tfrd_first_para = self._document._data.find('div', class_='before-append-para')
@@ -474,7 +476,9 @@ class TransformTests(unittest.TestCase):
                            r'This is usually used to provide an image beside the text instead of on top of it\.\s*'
                            r'</div>\s*</td>\s*<td style="vertical-align: middle;">\s*'
                            r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
-                           r'Multiple paragraphs should be seperated by 2 br tags instead of one\.\s*<br/>\s*<br/>\s*</div>\s*'  # noqa
+                           r'Multiple paragraphs should be seperated by 2 br tags instead of one\.\s*'
+                           r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<br/>\s*</div>\s*'  # noqa
+                           r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<br/>\s*</div>\s*</div>\s*'  # noqa
                            r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*Like this\.\s*'  # noqa
                            r'</div>\s*</td>\s*</tr>\s*</tbody>\s*</table>')
         tfrd_content = self._document._data.find('div', class_='before-lr-para')

@@ -58,9 +58,11 @@ class Document:
     def _is_before_body(tag):
         """Determine whether the tag preceeds a non empty div tag."""
         next_div = tag.find_next_sibling('div')
-        if tag.name != 'div' or next_div is None:
+        next_table = tag.find_next_sibling('table')
+        if tag.name != 'div' or (next_div is None and next_table is None):
             return False
-        return re.search(r'^\s*$', next_div.text) is None
+        return (re.search(r'^\s*$', next_div.text) is None or next_table is not None or
+                next_div.find('img') is not None)
 
     @staticmethod
     def _is_before_return(tag):
@@ -410,6 +412,13 @@ class Document:
                 break
             tag.extract()  # decompose does not exist for bs4.NavigableString
 
+    def _get_br_tag(self):
+        br_tag = self._data.new_tag('br')
+        div_tag = self._data.new_tag('div',
+                                      style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
+        div_tag.append(br_tag)
+        return div_tag
+
     def _add_paragraphs(self, reference_tag, transform_group, action):
         """Add the paragraphs after before_body or before after_body. Only one is required."""
         paragraph_list = transform_group[action]
@@ -422,15 +431,15 @@ class Document:
             # Add a br tag if and where appropriate
             if action in ('replace', 'left', 'right'):
                 if not_first_paragraph:
-                    reference_tag.append(self._data.new_tag('br'))
+                    reference_tag.append(self._get_br_tag())
             elif action == 'prepend':
-                paragraph_tag.append(self._data.new_tag('br'))
+                paragraph_tag.append(self._get_br_tag())
             else:  # action == 'append'
-                paragraph_tag.insert(0, self._data.new_tag('br'))
+                paragraph_tag.insert(0, self._get_br_tag())
 
             # Add a second br tag for the side-by-side specifiers
             if action in ('left', 'right') and not_first_paragraph:
-                reference_tag.append(self._data.new_tag('br'))
+                reference_tag.append(self._get_br_tag())
 
             # Use the action to determine the relation between the paragraph and the reference
             if action in ('replace', 'prepend'):
@@ -474,7 +483,7 @@ class Document:
     def apply(self, transforms):
         """Apply a transformation to the document (eg make all national changes to the document)."""
         if 'top' in transforms:
-            front_image = self._data.find('img', src=re.compile('^https://www\.ismailiinsight\.org/enewsletterpro/public_templates/IsmailiInsight/images/20121101Top_1\.jpg$|National')) # noqa
+            front_image = self._data.find('img', src=re.compile(r'^https://www\.ismailiinsight\.org/enewsletterpro/public_templates/IsmailiInsight/images/20121101Top_1\.jpg$|National')) # noqa
             front_caption = front_image.parent.div
 
             image_data = self._get_image_details(transforms['top']['image'])
@@ -486,6 +495,8 @@ class Document:
 
         articles = self._data.find_all(self._is_article_title)
         for art in articles:
+            if art.parent.name == 'a':
+                art = art.parent
             title = art.text.strip()
             if title not in transforms:
                 continue
@@ -495,10 +506,13 @@ class Document:
             # replace, prepend, append
             before_body = art.find_next_sibling(self._is_before_body)
             after_body = art.find_next_sibling(self._is_before_return)
+            print(title, before_body, after_body, '\n\n')
 
             if len({'left', 'right'} & transforms[title].keys()) == 2:
                 self._clear_body(before_body, after_body)
                 self._add_left_right(before_body, transforms[title])
+                del transforms[title]['left']
+                del transforms[title]['right']
             else:
                 if 'replace' in transforms[title]:
                     self._clear_body(before_body, after_body)

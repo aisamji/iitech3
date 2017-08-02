@@ -39,8 +39,8 @@ def get_code(path):
     if path is None:
         return pasteboard.get()
     else:
-        with open(path, 'r', encoding='UTF-8') as file:
-            code = file.read()
+        with open(path, 'r', encoding='UTF-8') as html_file:
+            code = html_file.read()
         return code
 
 
@@ -49,8 +49,8 @@ def set_code(path, doc):
     if path is None:
         pasteboard.set(doc)
     else:
-        with open(path, 'w', encoding='UTF-8') as file:
-            file.write(str(doc))
+        with open(path, 'w', encoding='UTF-8') as html_file:
+            html_file.write(str(doc))
 
 
 def review(args):
@@ -92,8 +92,8 @@ def repair(args):
 def apply(args):
     """Apply a transform to an HTML template."""
     html_doc = document.Document(get_code(args.file))
-    with open(args.transform_file, 'r') as file:
-        tfr_json = file.read()
+    with open(args.transform_file, 'r', encoding='UTF-8') as tfr_file:
+        tfr_json = yaml.load(tfr_file)
     not_applied = html_doc.apply(tfr_json)
 
     if len(not_applied) == 0:
@@ -303,6 +303,8 @@ def main(args=None):
                                        usage='%(prog)s <transform_file> <target>')
     apply_cmd._optionals.title = 'options'
     apply_cmd.set_defaults(func=apply)
+    apply_cmd.add_argument('transform_file', action='store', type=str,
+                           help='The yaml file that describes the transform to apply.')
     apply_target_grp = apply_cmd.add_argument_group(title='targets')
     apply_target_mex = apply_target_grp.add_mutually_exclusive_group(required=True)
     apply_target_mex.add_argument('file', action='store', type=str, nargs='?',
@@ -310,8 +312,6 @@ def main(args=None):
     apply_target_mex.add_argument('-p', '--pasteboard', action='store_const',
                                   dest='file', const=None,
                                   help='Specifies that the HTML code to transform is on the pasteboard.')
-    apply_cmd.add_argument('transform_file', action='store', type=str,
-                           help='The yaml file that describes the transform to apply.')
 
     # Parse args
     definition = base.parse_args(args)
