@@ -410,20 +410,26 @@ class Document:
                 break
             tag.extract()  # decompose does not exist for bs4.NavigableString
 
-    def _add_paragraphs(self, paragraph_list, reference_tag, action='replace'):
+    def _add_paragraphs(self, reference_tag, transform_group, action):
         """Add the paragraphs after before_body or before after_body. Only one is required."""
+        paragraph_list = transform_group[action]
         not_first_paragraph = False
         for descriptor in paragraph_list:
-            if action == 'replace' and not_first_paragraph:
-                reference_tag.append(self._data.new_tag('br'))
             paragraph_tag = self._data.new_tag('div',
                                                style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
             self._set_content(paragraph_tag, descriptor)
+
+            if action == 'replace':
+                if not_first_paragraph:
+                    reference_tag.append(self._data.new_tag('br'))
+                else:
+                    not_first_paragraph = True
+            elif action == 'prepend':
+                paragraph_tag.append(self._data.new_tag('br'))
+
             if action in ('replace', 'prepend'):
                 reference_tag.insert_after(paragraph_tag)
                 reference_tag = paragraph_tag
-            if action == 'replace':
-                not_first_paragraph = True
 
     def apply(self, transforms):
         """Apply a transformation to the document (eg make all national changes to the document)."""
@@ -443,14 +449,22 @@ class Document:
             title = art.text.strip()
             if title not in transforms:
                 continue
+
+            # Transform body
+            # Order of Specifiers
+            # replace, prepend, append
+            before_body = art.find_next_sibling(self._is_before_body)
+            after_body = art.find_next_sibling(self._is_before_return)
+
+            if 'replace' in transforms[title]:
+                self._clear_body(before_body, after_body)
+                self._add_paragraphs(before_body, transforms[title], 'replace')
             try:
-                before_body = art.find_next_sibling(self._is_before_body)
-                after_body = art.find_next_sibling(self._is_before_return)
-                if transforms[title]['replace'] is not None:
-                    self._clear_body(before_body, after_body)
-                    self._add_paragraphs(transforms[title]['replace'], before_body)
+                self._add_paragraphs(before_body, transforms[title], 'prepend')
             except KeyError:
                 pass
+
+            # Transform title
             try:
                 self._set_content(art, transforms[title]['title'])
             except KeyError:

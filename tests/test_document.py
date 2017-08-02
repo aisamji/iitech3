@@ -429,7 +429,7 @@ class TransformTests(unittest.TestCase):
     def test_prepend_specifier(self):
         """Confirm that the prepend specifier only prepends content to the existing content."""
         desired_first_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
-                              r'Usually used to prepend images\.\s*'
+                              r'Usually used to prepend images\.\s*<br/>\s*'
                               r'</div>')
         desired_second_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
                                r'This paragraph should not change\.\s*'
