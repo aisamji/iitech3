@@ -87,3 +87,7 @@ Bullets Descriptor:
         - Each item can be a single content descriptor
         - ' or a '
         - list of content descriptors.
+
+Prepend Specifier:
+  prepend:
+    - Usually used to prepend images.
