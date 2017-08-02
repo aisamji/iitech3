@@ -1,6 +1,0 @@
-{
-    "commands" : [
-      "*/*.py: flake8 {relPath}{filename}",
-      "*.py: flake8 {relPath}{filename}"
-    ]
-}

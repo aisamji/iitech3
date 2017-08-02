@@ -496,7 +496,7 @@ class Document:
             before_body = art.find_next_sibling(self._is_before_body)
             after_body = art.find_next_sibling(self._is_before_return)
 
-            if {'left', 'right'} & transforms[title].keys():
+            if len({'left', 'right'} & transforms[title].keys()) == 2:
                 self._clear_body(before_body, after_body)
                 self._add_left_right(before_body, transforms[title])
             else:
