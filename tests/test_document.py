@@ -402,7 +402,7 @@ class TransformTests(unittest.TestCase):
     def test_numbers_descriptor(self):
         """Confirm that the numbers descriptors are properly generated."""
         desired_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<ol>\s*' # noqa
-                        r'<li>\s*The numbers descriptor should be transformed into a list of items\.\s*</li>\s*'
+                        r'<li>\s*The numbers descriptor should be transformed into a numbered list\.\s*</li>\s*'
                         r'<li>\s*Each item can be a single content descriptor or a '
                         r'list of content descriptors\.\s*</li>\s*</ol>\s*</div>')
         tfrd_para = self._document._data.find('div', class_='before-numbers-para')
@@ -411,3 +411,16 @@ class TransformTests(unittest.TestCase):
         print(tfrd_para)
         self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
                              'The numbers descriptor should be transformed into an ordered list.')
+
+    def test_bullets_descriptor(self):
+        """Confirm that the bullets descriptors are properly generated."""
+        desired_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<ul>\s*' # noqa
+                        r'<li>\s*The bullets descriptor should be transformed into a bulleted list\.\s*</li>\s*'
+                        r'<li>\s*Each item can be a single content descriptor or a '
+                        r'list of content descriptors\.\s*</li>\s*</ul>\s*</div>')
+        tfrd_para = self._document._data.find('div', class_='before-bullets-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+
+        print(tfrd_para)
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The bullets descriptor should be transformed into an unordered list.')

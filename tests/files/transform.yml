@@ -73,7 +73,16 @@ Jump Descriptor:
 Numbers Descriptor:
   body:
     - numbers:
-      - The numbers descriptor should be transformed into a list of items.
+      - The numbers descriptor should be transformed into a numbered list.
+      -
+        - Each item can be a single content descriptor
+        - ' or a '
+        - list of content descriptors.
+
+Bullets Descriptor:
+  body:
+    - bullets:
+      - The bullets descriptor should be transformed into a bulleted list.
       -
         - Each item can be a single content descriptor
         - ' or a '

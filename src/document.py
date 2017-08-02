@@ -357,8 +357,11 @@ class Document:
         if 'numbers' in descriptor:
             list_tag = self._data.new_tag('ol')
             list_items = descriptor['numbers']
+        elif 'bullets' in descriptor:
+            list_tag = self._data.new_tag('ul')
+            list_items = descriptor['bullets']
         else:
-            raise exceptions.UnknownTransform(descriptor, ['numbers'])
+            raise exceptions.UnknownTransform(descriptor, ['numbers', 'bullets'])
 
         for item in list_items:
             item_tag = self._data.new_tag('li')
@@ -376,7 +379,7 @@ class Document:
                 hyperlinks = {'link', 'file', 'email'}
                 formats = {'bold', 'italics', 'underline'}
                 navigation = {'jump', 'anchor'}
-                lists = {'numbers'}
+                lists = {'numbers', 'bullets'}
                 # Using set intersection ((keys_to_search_for) & item.keys()),
                 # The set will be empty when the keys are not found.
                 # This takes advantage of the fact that empty == False and non-empty == True.
