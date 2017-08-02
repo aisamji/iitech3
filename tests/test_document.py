@@ -451,7 +451,8 @@ class TransformTests(unittest.TestCase):
                               r'This paragraph should not change\.\s*'
                               r'</div>')
         desired_second_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
-                               r'The append specifier should not transform the existing content  but it should only add its content after the existing content\.\s*'  # noqa
+                               r'\s*<br/>\s*'
+                               r'The append specifier should only add a paragraph after the existing content\.\s*'
                                r'</div>')
         tfrd_first_para = self._document._data.find('div', class_='before-append-para')
         tfrd_first_para = tfrd_first_para.find_next_sibling('div')

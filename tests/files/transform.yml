@@ -95,5 +95,4 @@ Prepend Specifier:
 Append Specifier:
   append:
     -
-      - The append specifier should not transform the existing content
-      - " but it should only add its content after the existing content."
+      - The append specifier should only add a paragraph after the existing content.

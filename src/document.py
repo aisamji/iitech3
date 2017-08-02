@@ -426,10 +426,14 @@ class Document:
                     not_first_paragraph = True
             elif action == 'prepend':
                 paragraph_tag.append(self._data.new_tag('br'))
+            else:  # action == 'append'
+                paragraph_tag.insert(0, self._data.new_tag('br'))
 
             if action in ('replace', 'prepend'):
                 reference_tag.insert_after(paragraph_tag)
                 reference_tag = paragraph_tag
+            else:  # action == 'append'
+                reference_tag.insert_before(paragraph_tag)
 
     def apply(self, transforms):
         """Apply a transformation to the document (eg make all national changes to the document)."""
@@ -461,6 +465,10 @@ class Document:
                 self._add_paragraphs(before_body, transforms[title], 'replace')
             try:
                 self._add_paragraphs(before_body, transforms[title], 'prepend')
+            except KeyError:
+                pass
+            try:
+                self._add_paragraphs(after_body, transforms[title], 'append')
             except KeyError:
                 pass
 
