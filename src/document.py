@@ -264,19 +264,20 @@ class Document:
 
     def _add_hyperlink(self, parent_tag, descriptor):
         """Add an 'a' tag as specified by the descriptor."""
-        # Define link and default display text
-        if 'link' in descriptor:
-            link_url = descriptor['link']
+        try:  # Try link descriptor
             default_text = descriptor['link']
-        elif 'file' in descriptor:
-            link_url = requests.compat.urljoin(self.BASE_URL,
-                                               self._ensure_quoted(descriptor['file']))
-            default_text = descriptor['file'].rsplit('/')[-1]
-        elif 'email' in descriptor:
-            link_url = 'mailto:' + descriptor['email']
-            default_text = descriptor['email']
-        else:
-            raise exceptions.UnknownTransform(descriptor, ['link', 'file', 'email'])
+            link_url = descriptor['link']
+        except KeyError:
+            try:  # Try file descriptor
+                default_text = descriptor['file'].rsplit('/')[-1]
+                link_url = requests.compat.urljoin(self.BASE_URL,
+                                                   self._ensure_quoted(descriptor['file']))
+            except KeyError:
+                try:  # Try email descriptor
+                    default_text = descriptor['email']
+                    link_url = 'mailto:' + descriptor['email']
+                except:
+                    raise exceptions.UnknownTransform(descriptor, ['link', 'file', 'email'])
 
         # Create 'a' tag that opens in new window
         a_tag = self._data.new_tag('a', href=link_url, target='_blank')
@@ -288,22 +289,17 @@ class Document:
 
     def _add_image(self, parent_tag, descriptor):
         """Add a 'table' tag that contains an image and, optionally, a caption."""
-        # Create table tag
-        table_tag = self._data.new_tag('table', align='center',
-                                       style="font-family: 'Segoe UI'; font-size: 13px; color: rgb(89, 89, 89);")
-        tbody_tag = self._data.new_tag('tbody')
-        table_tag.append(tbody_tag)
-
         # Add Image Row
-        tr_img_tag = self._data.new_tag('tr')
-        td_img_tag = self._data.new_tag('td',
-                                        style='text-align: center; vertical-align: middle;')
         image_data = self._get_image_details(descriptor['image'])
         img_tag = self._data.new_tag('img', src=image_data['source'],
                                      width=image_data['width'],
                                      height=image_data['height'])
+        td_img_tag = self._data.new_tag('td',
+                                        style='text-align: center; vertical-align: middle;')
         td_img_tag.append(img_tag)
+        tr_img_tag = self._data.new_tag('tr')
         tr_img_tag.append(td_img_tag)
+        tbody_tag = self._data.new_tag('tbody')
         tbody_tag.append(tr_img_tag)
 
         # Add Caption Row, if applicable
@@ -316,21 +312,26 @@ class Document:
             tbody_tag.append(tr_cap_tag)
         except KeyError:
             pass
+        table_tag = self._data.new_tag('table', align='center',
+                                       style="font-family: 'Segoe UI'; font-size: 13px; color: rgb(89, 89, 89);")
+        table_tag.append(tbody_tag)
         parent_tag.append(table_tag)
 
     def _add_formatted(self, parent_tag, descriptor):
         """Add an appropriate text formmating tag according to the descriptor."""
-        if 'bold' in descriptor:
-            format_tag = self._data.new_tag('strong')
+        try:  # Try bold descriptor
             content_list = descriptor['bold']
-        elif 'italics' in descriptor:
-            format_tag = self._data.new_tag('em')
-            content_list = descriptor['italics']
-        elif 'underline' in descriptor:
-            format_tag = self._data.new_tag('u')
-            content_list = descriptor['underline']
-        else:
-            raise exceptions.UnknownTransform(descriptor, ['bold', 'italics', 'underline'])
+            format_tag = self._data.new_tag('strong')
+        except KeyError:
+            try:  # Try italics descriptor
+                content_list = descriptor['italics']
+                format_tag = self._data.new_tag('em')
+            except KeyError:
+                try:  # Try underline descriptor
+                    content_list = descriptor['underline']
+                    format_tag = self._data.new_tag('u')
+                except KeyError:
+                    raise exceptions.UnknownTransform(descriptor, ['bold', 'italics', 'underline'])
 
         self._set_content(format_tag, content_list)
         parent_tag.append(format_tag)
@@ -338,13 +339,14 @@ class Document:
     def _add_navigation(self, parent_tag, descriptor):
         """Add an 'a' tag that drops an anchor or jumps to one."""
         a_tag = self._data.new_tag('a')
-        if 'anchor' in descriptor:
+        try:  # Try anchor descriptor
             default_text = a_tag['name'] = descriptor['anchor']
-        elif 'jump' in descriptor:
-            default_text = descriptor['jump']
-            a_tag['href'] = '#' + descriptor['jump']
-        else:
-            raise exceptions.UnknownTransform(descriptor, ['anchor', 'jump'])
+        except KeyError:
+            try:  # Try jump descriptor
+                default_text = descriptor['jump']
+                a_tag['href'] = '#' + descriptor['jump']
+            except KeyError:
+                raise exceptions.UnknownTransform(descriptor, ['anchor', 'jump'])
 
         try:
             self._set_content(a_tag, descriptor['text'])
@@ -354,14 +356,15 @@ class Document:
 
     def _add_list(self, parent_tag, descriptor):
         """Add an ol or a ul tag representing the list specified by the descriptor."""
-        if 'numbers' in descriptor:
-            list_tag = self._data.new_tag('ol')
+        try:  # Try numbers descriptor
             list_items = descriptor['numbers']
-        elif 'bullets' in descriptor:
-            list_tag = self._data.new_tag('ul')
-            list_items = descriptor['bullets']
-        else:
-            raise exceptions.UnknownTransform(descriptor, ['numbers', 'bullets'])
+            list_tag = self._data.new_tag('ol')
+        except KeyError:
+            try:  # Try bullets descriptor
+                list_items = descriptor['bullets']
+                list_tag = self._data.new_tag('ul')
+            except KeyError:
+                raise exceptions.UnknownTransform(descriptor, ['numbers', 'bullets'])
 
         for item in list_items:
             item_tag = self._data.new_tag('li')
