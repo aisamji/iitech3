@@ -33,6 +33,11 @@ MARK_DESC = 'Manually mark the status of an email or a url.'
 MARK_EMAIL_DESC = 'Manually mark the status of an email.'
 MARK_WEBPAGE_DESC = 'Manually mark the status of a webpage.'
 
+HELP_ACT = 'help'
+HELP_DESC = 'Get help on the program or any of its subcommands.'
+VERSION_ACT = 'version'
+VERSION_DESC = 'Print the version of this program.'
+
 
 def get_code(path):
     """Read in the code from the specified file or the pasteboard."""
@@ -147,25 +152,22 @@ def main(args=None):
     base = argparse.ArgumentParser(prog=PROG_NAME,
                                    description=version.__description__,
                                    formatter_class=argparse.RawTextHelpFormatter,
-                                   usage='%(prog)s -h|--help\n       '
-                                         '%(prog)s -v|--version\n       '
-                                         '%(prog)s <action>')
-    base._optionals.title = 'options'
+                                   usage='%(prog)s <action>', add_help=False)
     base.set_defaults(func=lambda x: base.print_help())
-    base.add_argument('-v', '--version', action='version', version='%(prog)s {:s}'.format(version.__version__))
     base_childs = base.add_subparsers(title='actions',
                                       help='{:6s}\t{:s}\n'.format(REVIEW_ACT, REVIEW_DESC) +
                                            '{:6s}\t{:s}\n'.format(REPAIR_ACT, REPAIR_DESC) +
                                            '{:6s}\t{:s}\n'.format(LOOKUP_ACT, LOOKUP_DESC) +
                                            '{:6s}\t{:s}\n'.format(MARK_ACT, MARK_DESC) +
-                                           '{:5s}\t{:s}'.format(APPLY_ACT, APPLY_DESC))
+                                           '{:6s}\t{:s}\n'.format(APPLY_ACT, APPLY_DESC) +
+                                           '{:6s}\t{:s}\n'.format(HELP_ACT, HELP_DESC) +
+                                           '{:6s}\t{:s}'.format(VERSION_ACT, VERSION_DESC))
 
     # Define review parser
     review_cmd = base_childs.add_parser(REVIEW_ACT, prog='{:s} {:s}'.format(PROG_NAME, REVIEW_ACT),
-                                        description=REVIEW_DESC,
+                                        description=REVIEW_DESC, add_help=False,
                                         usage='%(prog)s <file>\n       '
                                               '%(prog)s -p|--pasteboard')
-    review_cmd._optionals.title = 'options'
     review_cmd.set_defaults(func=review)
     review_target_grp = review_cmd.add_argument_group(title='targets')
     review_target_mex = review_target_grp.add_mutually_exclusive_group(required=True)
@@ -177,10 +179,9 @@ def main(args=None):
 
     # Define repair parser
     repair_cmd = base_childs.add_parser(REPAIR_ACT, prog=' '.join([PROG_NAME, REPAIR_ACT]),
-                                        description=REPAIR_DESC,
+                                        description=REPAIR_DESC, add_help=False,
                                         usage='%(prog)s <file>\n       '
                                               '%(prog)s -p|--pasteboard')
-    repair_cmd._optionals.title = 'options'
     repair_cmd.set_defaults(func=repair)
     repair_target_grp = repair_cmd.add_argument_group(title='targets')
     repair_target_mex = repair_target_grp.add_mutually_exclusive_group(required=True)
@@ -192,11 +193,10 @@ def main(args=None):
 
     # Define lookup parser
     lookup_cmd = base_childs.add_parser(LOOKUP_ACT, prog='{:s} {:s}'.format(PROG_NAME, LOOKUP_ACT),
-                                        description=LOOKUP_DESC,
+                                        description=LOOKUP_DESC, add_help=False,
                                         formatter_class=argparse.RawTextHelpFormatter,
                                         usage='%(prog)s {:s} [OPTIONS]\n       '.format(EMAIL_TYPE) +
                                               '%(prog)s {:s} [OPTIONS]'.format(WEBPAGE_TYPE))
-    lookup_cmd._optionals.title = 'options'
     lookup_cmd.set_defaults(func=lambda x: lookup_cmd.print_help())
     lookup_childs = lookup_cmd.add_subparsers(title='types',
                                               help='{:7s}\t{:s}\n'.format(EMAIL_TYPE, LOOKUP_EMAIL_DESC) +
@@ -218,8 +218,6 @@ def main(args=None):
     lookup_email_gen_grp = lookup_email_cmd.add_argument_group(title='arguments')
     lookup_email_gen_grp.add_argument('address', action='store', type=str,
                                       help='The email address to lookup.')
-    lookup_email_gen_grp.add_argument('-h', '--help', action='help',
-                                      help=HELP_HELP)
 
     lookup_url_cmd = lookup_childs.add_parser(WEBPAGE_TYPE, prog='{:s} {:s} {:s}'.format(
                                                   PROG_NAME, LOOKUP_ACT, WEBPAGE_TYPE),
@@ -237,16 +235,13 @@ def main(args=None):
     lookup_url_gen_grp = lookup_url_cmd.add_argument_group(title='arguments')
     lookup_url_gen_grp.add_argument('url', action='store', type=str,
                                     help='The url to lookup.')
-    lookup_url_gen_grp.add_argument('-h', '--help', action='help',
-                                    help=HELP_HELP)
 
     # Define mark parser
     mark_cmd = base_childs.add_parser(MARK_ACT, prog='{:s} {:s}'.format(PROG_NAME, MARK_ACT),
                                       formatter_class=argparse.RawTextHelpFormatter,
-                                      description=MARK_DESC,
+                                      description=MARK_DESC, add_help=False,
                                       usage='%(prog)s {:s} [OPTIONS]\n       '.format(EMAIL_TYPE) +
                                             '%(prog)s {:s} [OPTIONS]'.format(WEBPAGE_TYPE))
-    mark_cmd._optionals.title = 'arguments'
     mark_cmd.set_defaults(func=lambda x: mark_cmd.print_help())
     mark_childs = mark_cmd.add_subparsers(title='types',
                                           help='{:7s}\t{:s}\n'.format(EMAIL_TYPE, MARK_EMAIL_DESC) +
@@ -268,8 +263,6 @@ def main(args=None):
     mark_email_gen_grp = mark_email_cmd.add_argument_group(title='arguments')
     mark_email_gen_grp.add_argument('address', action='store', type=str,
                                     help='The address to mark.')
-    mark_email_gen_grp.add_argument('-h', '--help', action='help',
-                                    help=HELP_HELP)
 
     mark_url_cmd = mark_childs.add_parser(WEBPAGE_TYPE, prog='{:s}'.format(
                                               PROG_NAME, MARK_ACT, WEBPAGE_TYPE),
@@ -294,13 +287,11 @@ def main(args=None):
                                      dest='status', help='Mark the url as a teapot (status: 418).')
     mark_url_gen_grp = mark_url_cmd.add_argument_group(title='arguments')
     mark_url_gen_grp.add_argument('url', action='store', type=str, help='The url to mark.')
-    mark_url_gen_grp.add_argument('-h', '--help', action='help',
-                                  help=HELP_HELP)
 
     # Define apply parser
     apply_cmd = base_childs.add_parser(APPLY_ACT, prog='{:s} {:s}'.format(PROG_NAME, APPLY_ACT),
                                        description=APPLY_DESC,
-                                       usage='%(prog)s <transform_file> <target>')
+                                       usage='%(prog)s <transform_file> <target>', add_help=False)
     apply_cmd._optionals.title = 'options'
     apply_cmd.set_defaults(func=apply)
     apply_cmd.add_argument('transform_file', action='store', type=str,
@@ -312,6 +303,32 @@ def main(args=None):
     apply_target_mex.add_argument('-p', '--pasteboard', action='store_const',
                                   dest='file', const=None,
                                   help='Specifies that the HTML code to transform is on the pasteboard.')
+
+    # Define version command
+    version_cmd = base_childs.add_parser(VERSION_ACT, prog=' '.join((PROG_NAME, VERSION_ACT)),
+                                         description=VERSION_DESC,
+                                         usage='%(prog)s', add_help=False)
+    version_cmd.set_defaults(func=lambda x: '{:s} {:s}'.format((PROG_NAME, version.__version__)))
+
+    # Define help command
+    help_cmd = base_childs.add_parser(HELP_ACT, prog=' '.join((PROG_NAME, HELP_ACT)),
+                                      description=HELP_DESC, usage='%(prog)s <action>',  add_help=False)
+    help_childs = help_cmd.add_subparsers(title='actions')
+    help_review = help_childs.add_parser(REVIEW_ACT, prog=' '.join((PROG_NAME, HELP_ACT, REVIEW_ACT)),
+                                         usage='%(prog)s', add_help=False)
+    help_review.set_defaults(func=lambda x: review_cmd.print_help())
+    help_repair = help_childs.add_parser(REPAIR_ACT, prog=' '.join((PROG_NAME, HELP_ACT, REPAIR_ACT)),
+                                         usage='%(prog)s', add_help=False)
+    help_repair.set_defaults(func=lambda x: repair_cmd.print_help())
+    help_lookup = help_childs.add_parser(LOOKUP_ACT, prog=' '.join((PROG_NAME, HELP_ACT, LOOKUP_ACT)),
+                                         usage='%(prog)s', add_help=False)
+    help_lookup.set_defaults(func=lambda x: lookup_cmd.print_help())
+    help_mark = help_childs.add_parser(MARK_ACT, prog=' '.join((PROG_NAME, HELP_ACT, MARK_ACT)),
+                                       usage='%(prog)s', add_help=False)
+    help_mark.set_defaults(func=lambda x: mark_cmd.print_help())
+    help_apply = help_childs.add_parser(APPLY_ACT, prog=' '.join((PROG_NAME, HELP_ACT, APPLY_ACT)),
+                                        usage='%(prog)s', add_help=False)
+    help_apply.set_defaults(func=lambda x: apply_cmd.print_help())
 
     # Parse args
     definition = base.parse_args(args)
