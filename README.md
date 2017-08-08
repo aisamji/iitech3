@@ -53,7 +53,7 @@ In the file, the target for a transformation is identified by the article title 
 
 Transformation File
 -------------------
-The transformation file contains a set of transformations to be applied to an HTML template. These transformations can change the top (i.e. National) picture and/or any of the articles. The transformations are described by an identifier, a target, and one or more content descriptors.
+The transformation file contains a set of transformations to be applied to an HTML template. These transformations can change the top (i.e. National) picture and/or any of the articles. The transformations are described by an identifier, a target, and one or more content descriptors. For a sample file, view transform_sample.yml.
 
 ### Content Descriptors
 Content descriptors form are the most important aspects of transformation files. Content descriptors come in 2 main flavors. They can be a text literal . . .
@@ -69,7 +69,7 @@ link: https://www.google.com
 text: Custom display text for the link is not necessary.
 ```
 There are many content descriptors and by combining them properly, it is possible to transform the HTML template however you desire.
-An exhaustive list of the content descriptors is provided here. For a sample file, view tests/files/transform.yml.
+An exhaustive list of the content descriptors and their functions is provided here.
 - Image descriptor: Transforms into a centered image with a justified caption, if applicable.
 - Hyperlink descriptor: Transforms into a hyperlink that opens a url in a new window.
 - Email descriptor: Transforms into a hyperlink that composes a new email to a given address.
@@ -99,10 +99,3 @@ Identifiers, true to their name, are used to identify the target of the transfor
 ### Specifiers
 Specifiers further narrow down the target to either transforming the `title` or transforming the body (`prepend`, `append`, `replace`, `left`, `right`).
 Of the 5 body specifiers, `left` and `right` are mutually exclusive from the other 3 and these 2 must appear together. If any of the other 3 are present, they will be ignored. Also `replace` takes precedence over the `append` and `prepend`, so the body will be replaced before anything is appended or prepended to it.
-
-### Examples
-```yaml
-top:
-  image: National/07.14.2017/071417_National.jpg
-  caption: The top is handled special and must have a caption.
-```
