@@ -37,7 +37,7 @@ if platform == 'darwin':  # Mac OS X
     BIN_FILE = os.path.join('/usr/local/bin', metadata['__title__'])
     WHICH_PYTHON = '/usr/bin/env python3'
     try:
-        cmd = subprocess.run((metadata['__title__'], '--version'), stdout=subprocess.PIPE)
+        cmd = subprocess.run((metadata['__title__'], 'version'), stdout=subprocess.PIPE)
         IS_INSTALLED = True
         INSTALLED_VERSION = cmd.stdout.split()[1]
     except FileNotFoundError:
