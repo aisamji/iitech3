@@ -119,7 +119,7 @@ def lookup_email(args):
         print('{!r:} is {:s}valid: {:s}.'.format(info.address, '' if info.is_valid else 'in',
                                                  info.reason))
     except exceptions.CacheMissException:
-        print('{!r:} is not in the cache.'.format(args.address))
+        exit('{!r:} is not in the cache.'.format(args.address))
 
 
 def lookup_url(args):
@@ -131,7 +131,7 @@ def lookup_url(args):
         info = db.get_webpage(args.url, nolookup=args.cached)
         print('{!r:} reports {:s}.'.format(info.url, url_statuses[info.status][0]))
     except exceptions.CacheMissException:
-        print('{!r:} is not in the cache.'.format(args.url))
+        exit('{!r:} is not in the cache.'.format(args.url))
 
 
 def mark_email(args):
@@ -308,7 +308,7 @@ def main(args=None):
     version_cmd = base_childs.add_parser(VERSION_ACT, prog=' '.join((PROG_NAME, VERSION_ACT)),
                                          description=VERSION_DESC,
                                          usage='%(prog)s', add_help=False)
-    version_cmd.set_defaults(func=lambda x: '{:s} {:s}'.format((PROG_NAME, version.__version__)))
+    version_cmd.set_defaults(func=lambda x: print(' '.join((PROG_NAME, version.__version__))))
 
     # Define help command
     help_cmd = base_childs.add_parser(HELP_ACT, prog=' '.join((PROG_NAME, HELP_ACT)),
