@@ -100,6 +100,7 @@ Mixed Content:
       - bold: ' to generate the final content.'
     -
       - 'The displayed values of content descriptors can also contain other content descriptors. '
-      - bold:
-          underline: Like this.
+      - email: ali.samji@outlook.com
+        text:
+          bold: Ali I Samji
         # THE INDENTATION IS VERY IMPORTANT.
