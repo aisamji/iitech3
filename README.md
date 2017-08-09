@@ -1,18 +1,18 @@
 # iitech3
 A command line program to automate much of the repetitive work when templating the Ismaili Insight newsletter. The program is called by using one of its subcommands:
+
 - `repair` fixes any errors with the HTML template that are preventing it from loading properly.
 - `review` scans and fixes, if possible, all the links in the HTML template and verifies their utility and correctness.
 - `apply` reads a YAML transformation file and applies the transformations described therein to the HTML template.
 - `lookup` gets the status of an email address or a url from the cache or from an online lookup.
 - `mark` sets the status of an email address or a url in the cache.
 
-For help on any command, `iitech3 help` can be called.
-
 # options
 Other than the commands, there are a couple of options that can be used without calling any commands. `iitech3 help` prints out the help text. `iitech3 version` prints out the version information.
 
 # repair
 The `repair` command scans the HTML template it is given and fixes many common mistakes. Currently the list of mistakes that can be fixed is:
+
 - Add the missing 'i' in 'ismailinsight.org' to make 'ismailiinsight.org'.
 - Remove all useless `<style>` tags in the `<head>`. These are usually added by browser extensions like Grammarly.  
   *NB: While techniques like the ones Grammarly is using would work on a regular HTML page, using them on an online HTML template like the one in eNewsletterPro results in 10,000+ lines of useless code that slows down the website and would most likely prevent the newsletter from being received due to size restrictions on many email servers.*
@@ -44,7 +44,7 @@ iitech3 review template.html
 
 ## Absolute Links
 - Invisible links (i.e. links that do not have any display text) are removed.
-- Blank links (i.e. links that do not have a destination) are removed. (e.g. This goes to [nowhere]().)
+- Blank links (i.e. links that do not have a destination) are removed. (e.g. This goes to [nowhere]( ).)
 - All links are set to open in a new window.
 - Tracked links are decoded since the eNewsletterPro will add the tracker for the current newsletter upon sending. These types of links usually result when a link is copied from an already sent version of the template, whether it be from someones email or from eNewsletterPro. (e.g [Journey For Health](http://www.ismailiinsight.org/enewsletterpro/t.aspx?url=https%3A%2F%2Fjourneyforhealth.org) becomes [Journey For Health](https://journeyforhealth.org))
 - Links are marked as \*BROKEN* if they could not be reached. (e.g. [\*BROKEN 500*www.journeyforhealth.org](https://www.journeyforhealth.org))
@@ -58,7 +58,6 @@ Usage:
 iitech3 apply national.json -p
 iitech3 apply regional.json template.html
 ```
-*NB: The title used for identification is the one from before the transformation is applied*
 
 ## Transformation File
 The transformation file contains a set of transformations to be applied to an HTML template. These transformations can change the top (i.e. National) picture and/or any of the articles. The transformations are described by an identifier, a specifiers, and one or more content descriptors. An example of all the identifiers, specifiers, and content descriptors can be found in [transform_sample.yml](transform_sample.yml).
@@ -87,7 +86,7 @@ There are many content descriptors and by combining them properly, it is possibl
 ```
 
 ### Identifiers
-Identifiers, true to their name, are used to identify the target of the transform. Other than the special `top` identifier, targets are identified by the article title.
+Identifiers, true to their name, are used to identify the target of the transform. Other than the special `top` identifier, targets are identified by the article title.  
 *NB: The article title that is used for identification is the title of the article before it is transformed.*
 
 ### Specifiers
