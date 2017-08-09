@@ -1,0 +1,106 @@
+# This is a sample file showing the format of the transformation file.
+# Lines preceded by a '#' are comments and are ignored.
+# In YAML, indentation is very important.
+# If a key and its value are on multiple lines, the value must be indented 2 spaces
+# ahead of key's indentation level.
+
+# This is the national image near the top of the newsletter
+top:
+  image: National/07.14.2017/071417_National.jpg
+  # The image can be a full path (e.g. http://st1.bgr.in/wp-content/uploads/2016/10/cat-facebook.png)
+  # Or it can be relative path that will be interpreted as a location on the eNP server
+  # (e.g. https://ismailiinsight.org/eNewsletterPro/uploadedimages/000001/National/07.14.2017/071417_National.jpg)
+  caption: The top identifier is special since it requires an image and a caption and nothing else.
+
+# This will search for the first article named 'Retitling' and apply the specified transformations to it.
+Retitling:
+  title: The title specifier takes a content descriptor or a list of content descriptors.
+
+Body Specifiers:
+  replace:
+  # All except the title specifier, modify the body of the identified article.
+    - All of the specifiers except the title specifier take in a list of paragraphs.
+    -
+      - 'Each paragraph can be a '
+      - content descriptor
+      - ' or a '
+      - list of content descriptors
+      - .
+
+  prepend:
+    -
+      - The prepend specifier adds content before any existing content.
+      - ' It is applied after the replace specifier. '
+      - While this is usually used to add an image above the content, it can actually be used to add
+      - ' any type of content. '
+      - Note however that the prepend specifier does not modify the existing content so multiple calls
+      - ' to the prepend specifier (e.g. rerunning the apply operation multiple times) will result '
+      - in the content being prepended multiple times.
+
+  append:
+    -
+      - The append specifier is very similar to the prepend specifier
+      - ' except that it adds the content after any existing content. '
+      - Like the prepend specifier, it is applied after the replace specifier
+      - ' and multiple calls to the append specifier will result in the content being '
+      - appended multiple times.
+
+  left:
+    -
+      - The left and right specifiers must appear together. If they are both present,
+      - ' only these 2 specifiers will be applied even if there are any other body specifiers.'
+      - The left and right specifiers split the body into 2 columns and each column
+      - ' can have its own content (i.e. list of paragraphs).'
+  right:
+    - These specifiers are usually used to provide an image beside the content instead of above it.
+
+Content Descriptors:
+  replace:
+    -
+      - For all descriptors with a seperate text property, that property is optional.
+      - ' The caption property of the image descriptor functions in the same manner as the text property. '
+      - Any thing that is displayed on the screen can be specified by a content descriptor
+      - ' or a list of content descriptors.'
+    - This is a text literal content descriptor.
+    - image: http://st1.bgr.in/wp-content/uploads/2016/10/cat-facebook.png
+      caption: If not provided, no caption will be displayed.
+    - link: https://www.google.com
+      text: Opens the url in a new window. If not provided, this defaults to the url.
+    - email: ali.samji@outlook.com
+      text: Composes a new email to the given address. If not provided, this defaults to the address.
+    - anchor: arghh
+      text: Creates an anchor. If not provided, this defaults to the name provided.
+    - jump: arghh
+      text: Jumps to the specified anchor. If not provided this defaults to the name provided.
+    - file: National/07.14.2017/071417_National.jpg
+      text: Opens the file in a new window. If not provided, this defaults to the file name (e. g. 071417_National.jpg).
+      # Similar to the image source, the file descriptor can contain a relative path on the eNP server
+      # or it can contain the full path to the file.
+    - bold: This is bold text.
+    - italics: This is italicized text.
+    - underline: This is underlined text.
+    - numbers:
+      - This is a numbered list. Each item is transformed into the proper number (e.g. This is number 1).
+      -
+        - 'Each item can be a '
+        - bold: content descriptor
+        - ' or a '
+        - bold: list of content descriptors
+        - .
+    - bullets:
+      - This is a bulleted list.
+      -
+        - It is similar to the numbered list except
+        - ' that each item becomes a bullet point (e.g. This is the 2nd bullet).'
+
+Mixed Content:
+  replace:
+    -
+      - A list of content descriptors is processed in order
+      - bold: ' to generate the final content.'
+    -
+      - 'The displayed values of content descriptors can also contain other content descriptors. '
+      - email: ali.samji@outlook.com
+        text:
+          bold: Ali I Samji
+        # THE INDENTATION IS VERY IMPORTANT.

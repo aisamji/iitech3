@@ -3,8 +3,10 @@ import re
 import os
 from collections import Counter
 import bs4
-from requests import compat as urlfix
+import requests
+from PIL import Image
 import cache
+import exceptions
 
 
 # The review method should eventually . . .
@@ -13,6 +15,9 @@ import cache
 # TODO: allow interactive edit when applicable.
 class Document:
     """Represents an Ismaili Insight HTML newsletter."""
+
+    # Class constants
+    BASE_URL = 'https://ismailiinsight.org/eNewsletterPro/uploadedimages/000001/'
 
     def __init__(self, code):
         """Initialize a document from the given code."""
@@ -33,6 +38,39 @@ class Document:
     def _is_anchor(tag):
         """Determine whether a tag creates a new anchor in the document."""
         return tag.name == 'a' and tag.get('name') is not None
+
+    @staticmethod
+    def _is_article_title(tag):
+        """Determine whether the tag is an article title tag."""
+        if tag.name != 'span' or tag.get('style') is None:
+            return False
+        count = 2
+        count += 1 if 'background-color' in tag['style'] else 0
+        count += 1 if 'font-family' in tag['style'] else 0
+        return (
+            re.search(r'^\s*$', tag.text) is None and
+            'font-size: 16px' in tag['style'] and
+            ('color: #595959' in tag['style'] or 'color: rgb(89, 89, 89)' in tag['style']) and
+            tag['style'].count(';') == count
+        )
+
+    @staticmethod
+    def _is_before_body(tag):
+        """Determine whether the tag preceeds a non empty div tag."""
+        next_div = tag.find_next_sibling('div')
+        next_table = tag.find_next_sibling('table')
+        if tag.name != 'div' or (next_div is None and next_table is None):
+            return False
+        return (re.search(r'^\s*$', next_div.text) is None or next_table is not None or
+                next_div.find('img') is not None)
+
+    @staticmethod
+    def _is_before_return(tag):
+        """Determine whether the tag preceeds a Return to Top link."""
+        next_tag = tag.find_next_sibling(lambda x: isinstance(x, bs4.Tag))
+        if tag.name != 'div' or next_tag.name != 'a' or not next_tag.has_attr('href'):
+            return False
+        return next_tag['href'] == '#ReturnTop'
 
     # review method and helpers
     def _fix_external_link(self, link):
@@ -63,7 +101,7 @@ class Document:
                          link['href'], re.I)
         if match is not None:
             result['decoded'] = 1
-            link['href'] = urlfix.unquote_plus(match.group(1))
+            link['href'] = requests.compat.unquote_plus(match.group(1))
 
         if re.match(r'^##.+##$', link['href']) is None:
             url = re.sub(r'^##.+##', '', link['href'])  # strip off the ##TRACKCLICK## if applicable
@@ -134,7 +172,6 @@ class Document:
                 email.insert(0, '*INVALID {:s}*'.format(info.reason))
         return result
 
-    # public methods
     def review(self):
         """Review the document for accuracy before sending it out.
 
@@ -172,6 +209,7 @@ class Document:
 
         return result
 
+    # Repair method
     def repair(self):
         """Repair the document for any errors/bugs/typos/etc that are preventing it from loading correctly.
 
@@ -202,6 +240,306 @@ class Document:
             self._data.body.append(div)
 
         return result
+
+    # Transform method and helpers
+    @staticmethod
+    def _ensure_quoted(url):
+        """Ensure that the given url is quoted."""
+        return requests.compat.quote(requests.compat.unquote(url))
+
+    def _get_image_details(self, image_url):
+        """Get the proper source, height and width of the image specified by the given partial url."""
+        class RequestReader:
+            def __init__(self, request_object):
+                self._object = request_object
+
+            def read(self):
+                return self._object.content
+
+        source = requests.compat.urljoin(self.BASE_URL, self._ensure_quoted(image_url))
+        data = Image.open(RequestReader(requests.get(source)))
+        return {
+            'source': source,
+            'width': data.width,
+            'height': data.height
+        }
+
+    def _add_hyperlink(self, parent_tag, descriptor):
+        """Add an 'a' tag as specified by the descriptor."""
+        try:  # Try link descriptor
+            default_text = descriptor['link']
+            link_url = descriptor['link']
+        except KeyError:
+            try:  # Try file descriptor
+                default_text = descriptor['file'].rsplit('/')[-1]
+                link_url = requests.compat.urljoin(self.BASE_URL,
+                                                   self._ensure_quoted(descriptor['file']))
+            except KeyError:
+                try:  # Try email descriptor
+                    default_text = descriptor['email']
+                    link_url = 'mailto:' + descriptor['email']
+                except:
+                    raise exceptions.UnknownTransform(descriptor, ['link', 'file', 'email'])
+
+        # Create 'a' tag that opens in new window
+        a_tag = self._data.new_tag('a', href=link_url, target='_blank')
+        try:
+            self._set_content(a_tag, descriptor['text'])
+        except KeyError:
+            a_tag.string = default_text
+        parent_tag.append(a_tag)
+
+    def _add_image(self, parent_tag, descriptor):
+        """Add a 'table' tag that contains an image and, optionally, a caption."""
+        # Add Image Row
+        image_data = self._get_image_details(descriptor['image'])
+        img_tag = self._data.new_tag('img', src=image_data['source'],
+                                     width=image_data['width'],
+                                     height=image_data['height'])
+        td_img_tag = self._data.new_tag('td',
+                                        style='text-align: center; vertical-align: middle;')
+        td_img_tag.append(img_tag)
+        tr_img_tag = self._data.new_tag('tr')
+        tr_img_tag.append(td_img_tag)
+        tbody_tag = self._data.new_tag('tbody')
+        tbody_tag.append(tr_img_tag)
+
+        # Add Caption Row, if applicable
+        try:
+            tr_cap_tag = self._data.new_tag('tr')
+            td_cap_tag = self._data.new_tag('td',
+                                            style='text-align: justify; vertical-align: middle; font-size: 10px;')
+            self._set_content(td_cap_tag, descriptor['caption'])
+            tr_cap_tag.append(td_cap_tag)
+            tbody_tag.append(tr_cap_tag)
+        except KeyError:
+            pass
+        table_tag = self._data.new_tag('table', align='center',
+                                       style="font-family: 'Segoe UI'; font-size: 13px; color: rgb(89, 89, 89);")
+        table_tag.append(tbody_tag)
+        parent_tag.append(table_tag)
+
+    def _add_formatted(self, parent_tag, descriptor):
+        """Add an appropriate text formmating tag according to the descriptor."""
+        try:  # Try bold descriptor
+            content_list = descriptor['bold']
+            format_tag = self._data.new_tag('strong')
+        except KeyError:
+            try:  # Try italics descriptor
+                content_list = descriptor['italics']
+                format_tag = self._data.new_tag('em')
+            except KeyError:
+                try:  # Try underline descriptor
+                    content_list = descriptor['underline']
+                    format_tag = self._data.new_tag('u')
+                except KeyError:
+                    raise exceptions.UnknownTransform(descriptor, ['bold', 'italics', 'underline'])
+
+        self._set_content(format_tag, content_list)
+        parent_tag.append(format_tag)
+
+    def _add_navigation(self, parent_tag, descriptor):
+        """Add an 'a' tag that drops an anchor or jumps to one."""
+        a_tag = self._data.new_tag('a')
+        try:  # Try anchor descriptor
+            default_text = a_tag['name'] = descriptor['anchor']
+        except KeyError:
+            try:  # Try jump descriptor
+                default_text = descriptor['jump']
+                a_tag['href'] = '#' + descriptor['jump']
+            except KeyError:
+                raise exceptions.UnknownTransform(descriptor, ['anchor', 'jump'])
+
+        try:
+            self._set_content(a_tag, descriptor['text'])
+        except KeyError:
+            a_tag.string = default_text
+        parent_tag.append(a_tag)
+
+    def _add_list(self, parent_tag, descriptor):
+        """Add an ol or a ul tag representing the list specified by the descriptor."""
+        try:  # Try numbers descriptor
+            list_items = descriptor['numbers']
+            list_tag = self._data.new_tag('ol')
+        except KeyError:
+            try:  # Try bullets descriptor
+                list_items = descriptor['bullets']
+                list_tag = self._data.new_tag('ul')
+            except KeyError:
+                raise exceptions.UnknownTransform(descriptor, ['numbers', 'bullets'])
+
+        for item in list_items:
+            item_tag = self._data.new_tag('li')
+            self._set_content(item_tag, item)
+            list_tag.append(item_tag)
+        parent_tag.append(list_tag)
+
+    def _set_content(self, parent_tag, content_list):
+        """Convert the content_list to proper HTML and enclose with the given parent_tag."""
+        if not isinstance(content_list, list):
+            content_list = [content_list]
+        parent_tag.clear()
+        for item in content_list:
+            if isinstance(item, dict):
+                hyperlinks = {'link', 'file', 'email'}
+                formats = {'bold', 'italics', 'underline'}
+                navigation = {'jump', 'anchor'}
+                lists = {'numbers', 'bullets'}
+                # Using set intersection ((keys_to_search_for) & item.keys()),
+                # The set will be empty when the keys are not found.
+                # This takes advantage of the fact that empty == False and non-empty == True.
+                if hyperlinks & item.keys():
+                    self._add_hyperlink(parent_tag, item)
+                elif 'image' in item:
+                    self._add_image(parent_tag, item)
+                elif formats & item.keys():
+                    self._add_formatted(parent_tag, item)
+                elif navigation & item.keys():
+                    self._add_navigation(parent_tag, item)
+                elif lists & item.keys():
+                    self._add_list(parent_tag, item)
+                else:
+                    raise exceptions.UnknownTransform(item,
+                                                      hyperlinks + formats + navigation +
+                                                      lists + {'image'})
+            else:
+                parent_tag.append(str(item))
+
+    def _clear_body(self, before_body, after_body):
+        """Clear the body of all pre-existing content."""
+        for tag in list(before_body.next_siblings):
+            if tag == after_body:
+                break
+            tag.extract()  # decompose does not exist for bs4.NavigableString
+
+    def _get_br_tag(self):
+        br_tag = self._data.new_tag('br')
+        div_tag = self._data.new_tag('div',
+                                      style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
+        div_tag.append(br_tag)
+        return div_tag
+
+    def _add_paragraphs(self, reference_tag, transform_group, action):
+        """Add the paragraphs after before_body or before after_body. Only one is required."""
+        paragraph_list = transform_group[action]
+        not_first_paragraph = False
+        for descriptor in paragraph_list:
+            paragraph_tag = self._data.new_tag('div',
+                                               style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
+            self._set_content(paragraph_tag, descriptor)
+
+            # Add a br tag if and where appropriate
+            if action in ('replace', 'left', 'right'):
+                if not_first_paragraph:
+                    reference_tag.append(self._get_br_tag())
+            elif action == 'prepend':
+                paragraph_tag.append(self._get_br_tag())
+            else:  # action == 'append'
+                paragraph_tag.insert(0, self._get_br_tag())
+
+            # Add a second br tag for the side-by-side specifiers
+            if action in ('left', 'right') and not_first_paragraph:
+                reference_tag.append(self._get_br_tag())
+
+            # Use the action to determine the relation between the paragraph and the reference
+            if action in ('replace', 'prepend'):
+                reference_tag.insert_after(paragraph_tag)
+                reference_tag = paragraph_tag
+            elif action == 'append':
+                reference_tag.insert_before(paragraph_tag)
+            else:  # action in ('left', 'right')
+                if not_first_paragraph:
+                    reference_tag.insert_after(paragraph_tag)
+                    reference_tag = paragraph_tag
+                else:
+                    reference_tag.append(paragraph_tag)
+                    reference_tag = paragraph_tag
+
+            not_first_paragraph = True
+
+    def _add_left_right(self, before_body, transform_group):
+        """Add the content into a left column and a right column as specified by the transform group."""
+        # Set content for each column
+        left_td_tag = self._data.new_tag('td', style='vertical-align: middle;')
+        self._add_paragraphs(left_td_tag, transform_group, 'left')
+        right_td_tag = self._data.new_tag('td', style='vertical-align: middle;')
+        self._add_paragraphs(right_td_tag, transform_group, 'right')
+
+        # Create rest of the table and add it after the before_body tag
+        tr_tag = self._data.new_tag('tr')
+        tr_tag.append(left_td_tag)
+        tr_tag.append(right_td_tag)
+
+        tbody_tag = self._data.new_tag('tbody')
+        tbody_tag.append(tr_tag)
+
+        table_tag = self._data.new_tag('table',
+                                       align='center',
+                                       cellpadding='3',
+                                       cellspacing='0')
+        table_tag.append(tbody_tag)
+        before_body.insert_after(table_tag)
+
+    def apply(self, transforms):
+        """Apply a transformation to the document (eg make all national changes to the document)."""
+        if 'top' in transforms:
+            front_image = self._data.find('img', src=re.compile(r'^https://www\.ismailiinsight\.org/enewsletterpro/public_templates/IsmailiInsight/images/20121101Top_1\.jpg$|National')) # noqa
+            front_caption = front_image.parent.div
+
+            image_data = self._get_image_details(transforms['top']['image'])
+            front_image['src'] = image_data['source']
+            front_image['width'] = image_data['width']
+            front_image['height'] = image_data['height']
+            self._set_content(front_caption, transforms['top']['caption'])
+            del transforms['top']
+
+        articles = self._data.find_all(self._is_article_title)
+        for art in articles:
+            if art.parent.name == 'a':
+                art = art.parent
+            title = art.text.strip()
+            if title not in transforms:
+                continue
+
+            # Transform body
+            # Order of Specifiers
+            # replace, prepend, append
+            before_body = art.find_next_sibling(self._is_before_body)
+            after_body = art.find_next_sibling(self._is_before_return)
+            print(title, before_body, after_body, '\n\n')
+
+            if len({'left', 'right'} & transforms[title].keys()) == 2:
+                self._clear_body(before_body, after_body)
+                self._add_left_right(before_body, transforms[title])
+                del transforms[title]['left']
+                del transforms[title]['right']
+            else:
+                if 'replace' in transforms[title]:
+                    self._clear_body(before_body, after_body)
+                    self._add_paragraphs(before_body, transforms[title], 'replace')
+                    del transforms[title]['replace']
+                try:
+                    self._add_paragraphs(before_body, transforms[title], 'prepend')
+                    del transforms[title]['prepend']
+                except KeyError:
+                    pass
+                try:
+                    self._add_paragraphs(after_body, transforms[title], 'append')
+                    del transforms[title]['append']
+                except KeyError:
+                    pass
+
+            # Transform title
+            try:
+                self._set_content(art, transforms[title]['title'])
+                del transforms[title]['title']
+            except KeyError:
+                pass
+
+            if len(transforms[title]) == 0:
+                del transforms[title]
+
+        return transforms
 
     # magic methods
     def __str__(self):

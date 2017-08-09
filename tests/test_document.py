@@ -1,7 +1,10 @@
 """Tests for the document class."""
 import unittest
 from unittest import mock
+import os
+import re
 import bs4
+import yaml
 import remocks
 import cache
 import document
@@ -230,3 +233,257 @@ class RepairTests(unittest.TestCase):
         span_tag = apple._data.body.div.span
         self.assertTrue(span_tag is not None and span_tag.string == 'MOVE ME',
                         'The span tag should have been moved to the div tag.')
+
+
+class TransformTests(unittest.TestCase):
+    """A test suite for the apply method."""
+
+    def setUp(self):
+        """Prepare the environment before executing each test."""
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(current_dir, 'files/test.html'), 'r', encoding='UTF-8') as file:
+            self._document = document.Document(file.read())
+        with open(os.path.join(current_dir, 'files/transform.yml'), 'r', encoding='UTF-8') as file:
+            with mock.patch('document.requests.get', remocks.get):
+                self._remaining = self._document.apply(yaml.load(file))
+
+    def test_top_transform(self):
+        """Confirm that the new front image and caption is applied on the boilerplate picture."""
+        desired_img = r'<img alt="##TrackClick##" class="top-image" height="267" src="https://ismailiinsight\.org/eNewsletterPro/uploadedimages/000001/National/07\.14\.2017/071417_National\.jpg" width="400"/>'  # noqa
+        desired_cap = r'<div class="top-caption" style="font-family: Segoe UI; font-size: 10px; color: #595959; text-align: justify;">\s*The caption can be a content descriptor or a list of content descriptors\.\s*</div>'  # noqa
+
+        tfrd_img = self._document._data.find('img', class_='top-image')
+        tfrd_cap = self._document._data.find('div', class_='top-caption')
+
+        self.assertIsNotNone(re.search(desired_img, str(tfrd_img)),
+                             'The top image should be transformed to the new one.')
+        self.assertIsNotNone(re.search(desired_cap, str(tfrd_cap)),
+                             'The top caption should be transformed to the new one.')
+        self.assertNotIn('top', self._remaining, 'The top transform should be marked as completed.')
+
+    def test_article_transform(self):
+        """Confirm that a paragraph list item can be a content descriptor or a list of content descriptors."""
+        desired_first_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*This is a paragraph specified as a content descriptor\.\s*'  # noqa
+                              r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<br/>\s*</div>\s*</div>')  # noqa
+        desired_second_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">This is a paragraph specified\s*as a list of content descriptors\.\s*</div>'  # noqa
+
+        tfrd_first_para = self._document._data.find('div', class_='before-content-descriptor-para')
+        tfrd_first_para = tfrd_first_para.find_next_sibling('div')
+        tfrd_second_para = tfrd_first_para.find_next_sibling('div')
+
+        self.assertIsNotNone(re.search(desired_first_para, str(tfrd_first_para)),
+                             'The descriptor should be converted into a paragraph.')
+        self.assertIsNotNone(re.search(desired_second_para, str(tfrd_second_para)),
+                             'The The descriptors list should be converted into a paragraph.')
+        self.assertNotIn('Content Descriptors Test', self._remaining,
+                         'The content descriptors transform should be marked as completed.')
+
+    def test_article_selector(self):
+        """Confirm that only articles are selected."""
+        all_articles = [
+            'Content Descriptors Test',
+            'Hyperlink Descriptors',
+            'File Descriptor',
+            'Email Descriptor',
+            'Image Descriptor',
+            'Bold Descriptor',
+            'Italics Descriptor',
+            'Underline Descriptor',
+            'Anchor Descriptor',
+            'Numbers Descriptor',
+            'Bullets Descriptor',
+            'Prepend Specifier',
+            'Append Specifier',
+            'Left and Right Specifiers'
+        ]
+        found_articles = list(map(lambda x: x.text.strip(),
+                                  self._document._data.find_all(self._document._is_article_title)))
+
+        self.assertEqual(all_articles, found_articles,
+                         'Only proper articles should be selected.')
+
+    def test_link_descriptor(self):
+        """Confirm that link descriptors are properly generated."""
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The link descriptor should be transformed into an "a" tag that opens in a new window\.\s*<a href="https://the\.ismaili/diamond-jubilee/gallery-diamond-jubilee-homage-ceremony" target="_blank">\s*An old link\.\s*</a>\s*</div>'  # noqa
+        tfrd_para = self._document._data.find('div', class_='before-link-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+
+        print(tfrd_para)
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The link descriptor should be appended as an "a" tag to the content.')
+
+    def test_file_descriptor(self):
+        """Confirm that file descriptors are properly generated."""
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The file descriptor should have the baseurl appended before being transformed\s*into an "a" tag that opens in a new window\.\s*<a href="https://ismailiinsight\.org/eNewsletterPro/uploadedimages/000001/NorthernTexas/AKSWB%20Hope\.pdf" target="_blank">\s*An old file\.\s*</a>\s*</div>'  # noqa
+        tfrd_para = self._document._data.find('div', class_='before-file-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+
+        print(tfrd_para)
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The file descriptor should be appended as an "a" '
+                             'tag with a link to the file on the eNP server.')
+
+    def test_email_descriptor(self):
+        """Confirm that the email descriptors are properly generated."""
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The email descriptor should be transformed into a proper mailto link\.<a href="mailto:ali\.samji@outlook\.com" target="_blank">ali\.samji@outlook\.com</a>\s*</div>'  # noqa
+        tfrd_para = self._document._data.find('div', class_='before-email-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+
+        print(tfrd_para)
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The email descriptor should be added as an "a" tag with a mailto link.')
+
+    def test_image_descriptor(self):
+        """Confirm that the image descriptors are properly generated."""
+        desired_img_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
+                            r'<table align="center" style="font-family: \'Segoe UI\';'
+                            r' font-size: 13px; color: rgb\(89, 89, 89\);">\s*<tbody>\s*<tr>\s*'
+                            r'<td style="text-align: center; vertical-align: middle;">\s*<img height="267"'
+                            r' src="https://ismailiinsight\.org/eNewsletterPro/uploadedimages/000001/'
+                            r'National/07\.14\.2017/071417_National\.jpg" width="400"/>\s*</td>\s*</tr>\s*<tr>\s*'
+                            r'<td style="text-align: justify; vertical-align: middle; font-size: 10px;">\s*'
+                            r'The image descriptor should be transformed into a proper img '
+                            r'tag aligned via a table tag\.\s*</td>\s*</tr>\s*</tbody>\s*</table>\s*</div>')
+
+        tfrd_img_para = self._document._data.find('div', class_='before-image-para')
+        tfrd_img_para = tfrd_img_para.find_next_sibling('div')
+
+        print(tfrd_img_para)
+        self.assertIsNotNone(re.search(desired_img_para, str(tfrd_img_para)),
+                             'The image descriptor should be converted to a 2-row table containing the image'
+                             ' in the first row and the caption in the second.')
+
+    def test_bold_descriptor(self):
+        """Confirm that the bold descriptors are properly generated."""
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <strong>bold</strong> descriptor should enclose its text in a strong tag pair\.\s*</div>'  # noqa
+        tfrd_para = self._document._data.find('div', class_='before-bold-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+
+        print(tfrd_para)
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The bold descriptor should be wrapped in a strong tag pair.')
+
+    def test_italics_descriptor(self):
+        """Confirm that the italics descriptors are properly generated."""
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <em>italics</em> descriptor should enclose its text in an em tag pair\.\s*</div>'  # noqa
+        tfrd_para = self._document._data.find('div', class_='before-italics-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+
+        print(tfrd_para)
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The italics descriptor should be wrapped in an em tag pair.')
+
+    def test_underline_descriptor(self):
+        """Confirm that the underline descriptors are properly generated."""
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <u>underline</u> descriptor should enclose its text in a u tag pair\.\s*</div>'  # noqa
+        tfrd_para = self._document._data.find('div', class_='before-underline-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+
+        print(tfrd_para)
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The underline descriptor should be wrapped in a u tag pair.')
+
+    def test_anchor_descriptor(self):
+        """Confirm that the anchor descriptors are properly generated."""
+        desired_title = r'<span class="anchor-title" style="font-size: 16px; color: #595959; font-family: Segoe UI;">\s*<a name="bump">\s*Anchor Descriptor\s*</a>\s*</span>'  # noqa
+        tfrd_title = self._document._data.find('span', class_='anchor-title')
+
+        print(tfrd_title)
+        self.assertIsNotNone(re.search(desired_title, str(tfrd_title)),
+                             'The title should be wrapped in an "a" with a name and transformed to the new title.')
+
+    def test_jump_descriptor(self):
+        """Confirm that the jump descriptors are properly generated."""
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <a href="#bump">jump</a> descriptor should be transformed into an "a" tag the references an anchor\.\s*</div>'  # noqa
+        tfrd_para = self._document._data.find('div', class_='before-jump-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+
+        print(tfrd_para)
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The jump descriptor should be transformed into an "a" tag'
+                             ' that jumps to another part of the document.')
+
+    def test_numbers_descriptor(self):
+        """Confirm that the numbers descriptors are properly generated."""
+        desired_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<ol>\s*'  # noqa
+                        r'<li>\s*The numbers descriptor should be transformed into a numbered list\.\s*</li>\s*'
+                        r'<li>\s*Each item can be a single content descriptor or a '
+                        r'list of content descriptors\.\s*</li>\s*</ol>\s*</div>')
+        tfrd_para = self._document._data.find('div', class_='before-numbers-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+
+        print(tfrd_para)
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The numbers descriptor should be transformed into an ordered list.')
+
+    def test_bullets_descriptor(self):
+        """Confirm that the bullets descriptors are properly generated."""
+        desired_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<ul>\s*'  # noqa
+                        r'<li>\s*The bullets descriptor should be transformed into a bulleted list\.\s*</li>\s*'
+                        r'<li>\s*Each item can be a single content descriptor or a '
+                        r'list of content descriptors\.\s*</li>\s*</ul>\s*</div>')
+        tfrd_para = self._document._data.find('div', class_='before-bullets-para')
+        tfrd_para = tfrd_para.find_next_sibling('div')
+
+        print(tfrd_para)
+        self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
+                             'The bullets descriptor should be transformed into an unordered list.')
+
+    def test_prepend_specifier(self):
+        """Confirm that the prepend specifier only prepends content to the existing content."""
+        desired_first_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
+                              r'Usually used to prepend images\.\s*'
+                              r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<br/>\s*</div>\s*'  # noqa
+                              r'</div>')
+        desired_second_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
+                               r'This paragraph should not change\.\s*'
+                               r'</div>')
+        tfrd_first_para = self._document._data.find('div', class_='before-prepend-para')
+        tfrd_first_para = tfrd_first_para.find_next_sibling('div')
+        tfrd_second_para = tfrd_first_para.find_next_sibling('div')
+
+        print(tfrd_first_para, tfrd_second_para, sep='\n\n')
+        self.assertIsNotNone(re.search(desired_first_para, str(tfrd_first_para)),
+                             'A paragraph should be added before the existing paragraph.')
+        self.assertIsNotNone(re.search(desired_second_para, str(tfrd_second_para)),
+                             'The second paragraph should not be transformed.')
+
+    def test_append_specifier(self):
+        """Confirm that the append specifier only appends content to the existing content."""
+        desired_first_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
+                              r'This paragraph should not change\.\s*'
+                              r'</div>')
+        desired_second_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
+                               r'\s*<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<br/>\s*</div>\s*'  # noqa
+                               r'The append specifier should only add a paragraph after the existing content\.\s*'
+                               r'</div>')
+        tfrd_first_para = self._document._data.find('div', class_='before-append-para')
+        tfrd_first_para = tfrd_first_para.find_next_sibling('div')
+        tfrd_second_para = tfrd_first_para.find_next_sibling('div')
+
+        print(tfrd_first_para, tfrd_second_para, sep='\n\n')
+        self.assertIsNotNone(re.search(desired_first_para, str(tfrd_first_para)),
+                             'The first paragraph should not be transformed.')
+        self.assertIsNotNone(re.search(desired_second_para, str(tfrd_second_para)),
+                             'A paragraph should be added after the existing paragraph.')
+
+    def test_left_and_right_specifiers(self):
+        """Confirm that the left and right specifiers replace the content with a 2x1 table."""
+        desired_content = (r'<table align="center" cellpadding="3" cellspacing="0">\s*<tbody>\s*<tr>\s*'
+                           r'<td style="vertical-align: middle;">\s*'
+                           r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
+                           r'Both specifiers are simply a list of paragraphs just like with the other specifiers\.'
+                           r'This is usually used to provide an image beside the text instead of on top of it\.\s*'
+                           r'</div>\s*</td>\s*<td style="vertical-align: middle;">\s*'
+                           r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
+                           r'Multiple paragraphs should be seperated by 2 br tags instead of one\.\s*'
+                           r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<br/>\s*</div>\s*'  # noqa
+                           r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<br/>\s*</div>\s*</div>\s*'  # noqa
+                           r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*Like this\.\s*'  # noqa
+                           r'</div>\s*</td>\s*</tr>\s*</tbody>\s*</table>')
+        tfrd_content = self._document._data.find('div', class_='before-lr-para')
+        tfrd_content = tfrd_content.find_next_sibling('table')
+
+        print(tfrd_content)
+        self.assertIsNotNone(re.search(desired_content, str(tfrd_content)),
+                             'The content should be transformed into a side-by-side table tag containing the content.')
