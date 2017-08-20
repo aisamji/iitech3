@@ -4,21 +4,21 @@ top:
   caption: The caption can be a content descriptor or a list of content descriptors.
 
 Content Descriptors Test:
-  replace:
+  body:
     - This is a paragraph specified as a content descriptor.
     -
       - 'This is a paragraph specified '
       - as a list of content descriptors.
 
 Hyperlink Descriptors:
-  replace:
+  body:
     -
       - The link descriptor should be transformed into an "a" tag that opens in a new window.
       - link: https://the.ismaili/diamond-jubilee/gallery-diamond-jubilee-homage-ceremony
         text: An old link.
 
 File Descriptor:
-  replace:
+  body:
     -
       - 'The file descriptor should have the baseurl appended before being transformed '
       - into an "a" tag that opens in a new window.
@@ -26,34 +26,34 @@ File Descriptor:
         text: An old file.
 
 Email Descriptor:
-  replace:
+  body:
     -
       - The email descriptor should be transformed into a proper mailto link.
       - email: ali.samji@outlook.com
 
 Image Descriptor:
-  replace:
+  body:
     - image: National/07.14.2017/071417_National.jpg
       caption:
         - 'The image descriptor should be transformed '
         - into a proper img tag aligned via a table tag.
 
 Bold Descriptor:
-  replace:
+  body:
     -
       - 'The '
       - bold: bold
       - ' descriptor should enclose its text in a strong tag pair.'
 
 Italics Descriptor:
-  replace:
+  body:
     -
       - 'The '
       - italics: italics
       - ' descriptor should enclose its text in an em tag pair.'
 
 Underline Descriptor:
-  replace:
+  body:
     -
       - 'The '
       - underline: underline
@@ -63,15 +63,15 @@ Jump Descriptor:
   title:
     anchor: bump
     text: Anchor Descriptor
-  replace:
+  body:
     -
       - 'The '
       - jump: bump
         text: jump
-      - ' descriptor should be transformed into an "a" tag the references an anchor.'
+      - ' descriptor should be transformed into an "a" tag that references an anchor.'
 
 Numbers Descriptor:
-  replace:
+  body:
     - numbers:
       - The numbers descriptor should be transformed into a numbered list.
       -
@@ -80,22 +80,13 @@ Numbers Descriptor:
         - list of content descriptors.
 
 Bullets Descriptor:
-  replace:
+  body:
     - bullets:
       - The bullets descriptor should be transformed into a bulleted list.
       -
         - Each item can be a single content descriptor
         - ' or a '
         - list of content descriptors.
-
-Prepend Specifier:
-  prepend:
-    - Usually used to prepend images.
-
-Append Specifier:
-  append:
-    -
-      - The append specifier should only add a paragraph after the existing content.
 
 Left and Right Specifiers:
   left:

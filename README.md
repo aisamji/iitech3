@@ -90,8 +90,7 @@ Identifiers, true to their name, are used to identify the target of the transfor
 *NB: The article title that is used for identification is the title of the article before it is transformed.*
 
 ### Specifiers
-Specifiers further narrow down the target to either transforming the `title` or transforming the body (`prepend`, `append`, `replace`, `left`, `right`).
-Of the 5 body specifiers, `left` and `right` are mutually exclusive from the other 3 and these 2 must appear together. If any of the other 3 are present, they will be ignored. In addition, the `replace` specifier takes precedence over the `append` and `prepend` specifiers, so the body will be replaced before anything is appended or prepended to it.
+Specifiers further narrow down the target to either transforming the `title` or transforming the body (`body`, `left`, `right`). Of the 3 body specifiers, `left` and `right` are mutually exclusive from `body` and these 2 must appear together. If `body` is present, it will be ignored.
 
 # lookup
 The `lookup` command is used to lookup the status of an email address or webpage. By default, the lookup command looks for the requested value in the cache and if it is not found or if it is out-of-date (age >= 2 weeks) then, and only then, the status is retrieved from online and an entry is added to the cache.
