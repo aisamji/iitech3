@@ -292,8 +292,6 @@ class TransformTests(unittest.TestCase):
             'Anchor Descriptor',
             'Numbers Descriptor',
             'Bullets Descriptor',
-            'Prepend Specifier',
-            'Append Specifier',
             'Left and Right Specifiers'
         ]
         found_articles = list(map(lambda x: x.text.strip(),
@@ -394,7 +392,7 @@ class TransformTests(unittest.TestCase):
 
     def test_jump_descriptor(self):
         """Confirm that the jump descriptors are properly generated."""
-        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <a href="#bump">jump</a> descriptor should be transformed into an "a" tag the references an anchor\.\s*</div>'  # noqa
+        desired_para = r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*The <a href="#bump">jump</a> descriptor should be transformed into an "a" tag that references an anchor\.\s*</div>'  # noqa
         tfrd_para = self._document._data.find('div', class_='before-jump-para')
         tfrd_para = tfrd_para.find_next_sibling('div')
 
@@ -428,44 +426,6 @@ class TransformTests(unittest.TestCase):
         print(tfrd_para)
         self.assertIsNotNone(re.search(desired_para, str(tfrd_para)),
                              'The bullets descriptor should be transformed into an unordered list.')
-
-    def test_prepend_specifier(self):
-        """Confirm that the prepend specifier only prepends content to the existing content."""
-        desired_first_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
-                              r'Usually used to prepend images\.\s*'
-                              r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<br/>\s*</div>\s*'  # noqa
-                              r'</div>')
-        desired_second_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
-                               r'This paragraph should not change\.\s*'
-                               r'</div>')
-        tfrd_first_para = self._document._data.find('div', class_='before-prepend-para')
-        tfrd_first_para = tfrd_first_para.find_next_sibling('div')
-        tfrd_second_para = tfrd_first_para.find_next_sibling('div')
-
-        print(tfrd_first_para, tfrd_second_para, sep='\n\n')
-        self.assertIsNotNone(re.search(desired_first_para, str(tfrd_first_para)),
-                             'A paragraph should be added before the existing paragraph.')
-        self.assertIsNotNone(re.search(desired_second_para, str(tfrd_second_para)),
-                             'The second paragraph should not be transformed.')
-
-    def test_append_specifier(self):
-        """Confirm that the append specifier only appends content to the existing content."""
-        desired_first_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
-                              r'This paragraph should not change\.\s*'
-                              r'</div>')
-        desired_second_para = (r'<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*'  # noqa
-                               r'\s*<div style="font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;">\s*<br/>\s*</div>\s*'  # noqa
-                               r'The append specifier should only add a paragraph after the existing content\.\s*'
-                               r'</div>')
-        tfrd_first_para = self._document._data.find('div', class_='before-append-para')
-        tfrd_first_para = tfrd_first_para.find_next_sibling('div')
-        tfrd_second_para = tfrd_first_para.find_next_sibling('div')
-
-        print(tfrd_first_para, tfrd_second_para, sep='\n\n')
-        self.assertIsNotNone(re.search(desired_first_para, str(tfrd_first_para)),
-                             'The first paragraph should not be transformed.')
-        self.assertIsNotNone(re.search(desired_second_para, str(tfrd_second_para)),
-                             'A paragraph should be added after the existing paragraph.')
 
     def test_left_and_right_specifiers(self):
         """Confirm that the left and right specifiers replace the content with a 2x1 table."""

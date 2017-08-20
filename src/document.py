@@ -421,39 +421,28 @@ class Document:
 
     def _add_paragraphs(self, reference_tag, transform_group, action):
         """Add the paragraphs after before_body or before after_body. Only one is required."""
-        paragraph_list = transform_group[action]
         not_first_paragraph = False
+        paragraph_list = transform_group[action]
+
         for descriptor in paragraph_list:
             paragraph_tag = self._data.new_tag('div',
                                                style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
             self._set_content(paragraph_tag, descriptor)
 
-            # Add a br tag if and where appropriate
-            if action in ('replace', 'left', 'right'):
-                if not_first_paragraph:
-                    reference_tag.append(self._get_br_tag())
-            elif action == 'prepend':
-                paragraph_tag.append(self._get_br_tag())
-            else:  # action == 'append'
-                paragraph_tag.insert(0, self._get_br_tag())
-
-            # Add a second br tag for the side-by-side specifiers
-            if action in ('left', 'right') and not_first_paragraph:
+            # Add a br tag between paragraphs
+            # Add 2, if action is left or right
+            if not_first_paragraph:
                 reference_tag.append(self._get_br_tag())
+                if action in ('left', 'right'):
+                    reference_tag.append(self._get_br_tag())
 
             # Use the action to determine the relation between the paragraph and the reference
-            if action in ('replace', 'prepend'):
+            if action in ('left', 'right') and not not_first_paragraph:
+                reference_tag.append(paragraph_tag)
+                reference_tag = paragraph_tag
+            else:
                 reference_tag.insert_after(paragraph_tag)
                 reference_tag = paragraph_tag
-            elif action == 'append':
-                reference_tag.insert_before(paragraph_tag)
-            else:  # action in ('left', 'right')
-                if not_first_paragraph:
-                    reference_tag.insert_after(paragraph_tag)
-                    reference_tag = paragraph_tag
-                else:
-                    reference_tag.append(paragraph_tag)
-                    reference_tag = paragraph_tag
 
             not_first_paragraph = True
 
@@ -502,31 +491,19 @@ class Document:
                 continue
 
             # Transform body
-            # Order of Specifiers
-            # replace, prepend, append
+            # left/right specifiers override a body specifier
             before_body = art.find_next_sibling(self._is_before_body)
             after_body = art.find_next_sibling(self._is_before_return)
 
-            if len({'left', 'right'} & transforms[title].keys()) == 2:
+            if len({'body', 'left', 'right'} & transforms[title].keys()) != 0:
                 self._clear_body(before_body, after_body)
-                self._add_left_right(before_body, transforms[title])
-                del transforms[title]['left']
-                del transforms[title]['right']
-            else:
-                if 'replace' in transforms[title]:
-                    self._clear_body(before_body, after_body)
-                    self._add_paragraphs(before_body, transforms[title], 'replace')
-                    del transforms[title]['replace']
                 try:
-                    self._add_paragraphs(before_body, transforms[title], 'prepend')
-                    del transforms[title]['prepend']
+                    self._add_left_right(before_body, transforms[title])
+                    del transforms[title]['left']
+                    del transforms[title]['right']
                 except KeyError:
-                    pass
-                try:
-                    self._add_paragraphs(after_body, transforms[title], 'append')
-                    del transforms[title]['append']
-                except KeyError:
-                    pass
+                    self._add_paragraphs(before_body, transforms[title], 'body')
+                    del transforms[title]['body']
 
             # Transform title
             try:
