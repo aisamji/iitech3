@@ -506,7 +506,6 @@ class Document:
             # replace, prepend, append
             before_body = art.find_next_sibling(self._is_before_body)
             after_body = art.find_next_sibling(self._is_before_return)
-            print(title, before_body, after_body, '\n\n')
 
             if len({'left', 'right'} & transforms[title].keys()) == 2:
                 self._clear_body(before_body, after_body)
