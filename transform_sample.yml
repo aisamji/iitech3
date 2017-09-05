@@ -17,7 +17,7 @@ Retitling:
   title: The title specifier takes a content descriptor or a list of content descriptors.
 
 Body Specifiers:
-  replace:
+  body:
   # All except the title specifier, modify the body of the identified article.
     - All of the specifiers except the title specifier take in a list of paragraphs.
     -
@@ -26,24 +26,6 @@ Body Specifiers:
       - ' or a '
       - list of content descriptors
       - .
-
-  prepend:
-    -
-      - The prepend specifier adds content before any existing content.
-      - ' It is applied after the replace specifier. '
-      - While this is usually used to add an image above the content, it can actually be used to add
-      - ' any type of content. '
-      - Note however that the prepend specifier does not modify the existing content so multiple calls
-      - ' to the prepend specifier (e.g. rerunning the apply operation multiple times) will result '
-      - in the content being prepended multiple times.
-
-  append:
-    -
-      - The append specifier is very similar to the prepend specifier
-      - ' except that it adds the content after any existing content. '
-      - Like the prepend specifier, it is applied after the replace specifier
-      - ' and multiple calls to the append specifier will result in the content being '
-      - appended multiple times.
 
   left:
     -
@@ -55,7 +37,7 @@ Body Specifiers:
     - These specifiers are usually used to provide an image beside the content instead of above it.
 
 Content Descriptors:
-  replace:
+  body:
     -
       - For all descriptors with a seperate text property, that property is optional.
       - ' The caption property of the image descriptor functions in the same manner as the text property. '
@@ -94,7 +76,7 @@ Content Descriptors:
         - ' that each item becomes a bullet point (e.g. This is the 2nd bullet).'
 
 Mixed Content:
-  replace:
+  body:
     -
       - A list of content descriptors is processed in order
       - bold: ' to generate the final content.'
