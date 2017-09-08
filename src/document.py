@@ -42,16 +42,19 @@ class Document:
     @staticmethod
     def _is_article_title(tag):
         """Determine whether the tag is an article title tag."""
-        if tag.name != 'span' or tag.get('style') is None:
+        if tag.get('style') is None:
             return False
-        count = 2
+        tag['style'] = tag['style'].lower()
+        if tag.name != 'span':
+            return False
+        count = 1
         count += 1 if 'background-color' in tag['style'] else 0
         count += 1 if 'font-family' in tag['style'] else 0
         return (
             re.search(r'^\s*$', tag.text) is None and
             'font-size: 16px' in tag['style'] and
             ('color: #595959' in tag['style'] or 'color: rgb(89, 89, 89)' in tag['style']) and
-            tag['style'].count(';') == count
+            tag['style'].count(';') >= count
         )
 
     @staticmethod

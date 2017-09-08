@@ -250,7 +250,7 @@ class TransformTests(unittest.TestCase):
     def test_top_transform(self):
         """Confirm that the new front image and caption is applied on the boilerplate picture."""
         desired_img = r'<img alt="##TrackClick##" class="top-image" height="267" src="https://ismailiinsight\.org/eNewsletterPro/uploadedimages/000001/National/07\.14\.2017/071417_National\.jpg" width="400"/>'  # noqa
-        desired_cap = r'<div class="top-caption" style="font-family: Segoe UI; font-size: 10px; color: #595959; text-align: justify;">\s*The caption can be a content descriptor or a list of content descriptors\.\s*</div>'  # noqa
+        desired_cap = r'<div class="top-caption" style="font-family: segoe ui; font-size: 10px; color: #595959; text-align: justify;">\s*The caption can be a content descriptor or a list of content descriptors\.\s*</div>'  # noqa
 
         tfrd_img = self._document._data.find('img', class_='top-image')
         tfrd_cap = self._document._data.find('div', class_='top-caption')
@@ -383,7 +383,7 @@ class TransformTests(unittest.TestCase):
 
     def test_anchor_descriptor(self):
         """Confirm that the anchor descriptors are properly generated."""
-        desired_title = r'<span class="anchor-title" style="font-size: 16px; color: #595959; font-family: Segoe UI;">\s*<a name="bump">\s*Anchor Descriptor\s*</a>\s*</span>'  # noqa
+        desired_title = r'<span class="anchor-title" style="font-size: 16px; color: #595959; font-family: segoe ui;">\s*<a name="bump">\s*Anchor Descriptor\s*</a>\s*</span>'  # noqa
         tfrd_title = self._document._data.find('span', class_='anchor-title')
 
         print(tfrd_title)
