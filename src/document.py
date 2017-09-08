@@ -44,6 +44,7 @@ class Document:
         """Determine whether the tag is an article title tag."""
         if tag.name != 'span' or tag.get('style') is None:
             return False
+        tag['style'] = tag['style'].lower()
         count = 2
         count += 1 if 'background-color' in tag['style'] else 0
         count += 1 if 'font-family' in tag['style'] else 0

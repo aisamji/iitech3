@@ -383,7 +383,7 @@ class TransformTests(unittest.TestCase):
 
     def test_anchor_descriptor(self):
         """Confirm that the anchor descriptors are properly generated."""
-        desired_title = r'<span class="anchor-title" style="font-size: 16px; color: #595959; font-family: Segoe UI;">\s*<a name="bump">\s*Anchor Descriptor\s*</a>\s*</span>'  # noqa
+        desired_title = r'<span class="anchor-title" style="font-size: 16px; color: #595959; font-family: segoe ui;">\s*<a name="bump">\s*Anchor Descriptor\s*</a>\s*</span>'  # noqa
         tfrd_title = self._document._data.find('span', class_='anchor-title')
 
         print(tfrd_title)
