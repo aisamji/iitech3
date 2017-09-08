@@ -250,7 +250,7 @@ class TransformTests(unittest.TestCase):
     def test_top_transform(self):
         """Confirm that the new front image and caption is applied on the boilerplate picture."""
         desired_img = r'<img alt="##TrackClick##" class="top-image" height="267" src="https://ismailiinsight\.org/eNewsletterPro/uploadedimages/000001/National/07\.14\.2017/071417_National\.jpg" width="400"/>'  # noqa
-        desired_cap = r'<div class="top-caption" style="font-family: Segoe UI; font-size: 10px; color: #595959; text-align: justify;">\s*The caption can be a content descriptor or a list of content descriptors\.\s*</div>'  # noqa
+        desired_cap = r'<div class="top-caption" style="font-family: segoe ui; font-size: 10px; color: #595959; text-align: justify;">\s*The caption can be a content descriptor or a list of content descriptors\.\s*</div>'  # noqa
 
         tfrd_img = self._document._data.find('img', class_='top-image')
         tfrd_cap = self._document._data.find('div', class_='top-caption')
