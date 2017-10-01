@@ -1,6 +1,7 @@
 """Classes and constants that represent an Ismaili Insight HTML newsletter."""
 import re
 import os
+import hashlib
 from collections import Counter
 from datetime import datetime
 import bs4
@@ -18,6 +19,7 @@ class Document:
 
     # Class constants
     BASE_URL = 'https://ismailiinsight.org/eNewsletterPro/uploadedimages/000001/'
+    SNAPSHOT_DIR = 'snapshots'
 
     def __init__(self, code):
         """Initialize a document from the given code."""
@@ -528,6 +530,47 @@ class Document:
                                   ' (?:Region|Area) Events', code, re.I)
         self.issue_date = datetime.strptime(date_string.group(0), '%B %d, %Y')
         self.issue_region = region_string.group(0).lower()
+
+    def save(self, message, *, date=None, region=None):
+        """Save a snapshot of the document in its current state so that it can be restored later."""
+        code = str(self._data)
+        save_time = '{:%Y%m%d%H%M%S%f}'.format(datetime.today())
+
+        # Determine regional snapshot directory
+        if date is None:
+            date = self.issue_date
+        date = '{:%Y%m%d}'.format(date)
+        region = self.issue_region if region is None else str(region).lower()
+
+        region_snapshot_dir = os.path.join(self.SNAPSHOT_DIR, region, date)
+
+        # Generate and compare SHA-256 hash to avoid duplicates
+        hasher = hashlib.sha256()
+        hasher.update(code.encode())
+        hash_value = hasher.digest()
+
+        hash_files = (name for name in os.listdir(region_snapshot_dir) if name.endwswith('.sha256'))
+        for h in hash_files:
+            with open(os.path.join(region_snapshot_dir, h), 'rb') as hfile:
+                other_hash = hfile.read()
+            if hash_value == other_hash:
+                return None
+
+        hash_file_name = '{:s}.sha256'.format(save_time)
+        with open(os.path.join(region_snapshot_dir, hash_file_name), 'wb') as hfile:
+            hfile.write(hash_value)
+
+        # Save message and copy html code
+        html_file_name = '{:s}.html'.format(save_time)
+        with open(os.path.join(region_snapshot_dir, html_file_name), 'w') as cfile:
+            cfile.write(code)
+
+        msg_file_name = '{:s}.txt'.format(save_time)
+        with open(os.path.join(region_snapshot_dir, msg_file_name), 'w') as mfile:
+            mfile.write(message)
+
+        # Return tuple consisting of (message, save_time, region, date)
+        return message, save_time, region, date
 
     # magic methods
     def __str__(self):
