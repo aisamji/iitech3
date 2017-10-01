@@ -572,6 +572,29 @@ class Document:
         # Return tuple consisting of (message, save_time, region, date)
         return message, save_time, region, date
 
+    def list(self, *, date=None, region=None):
+        """Get a list of all available snapshots."""
+        # Determine regional snapshot directory
+        if date is None:
+            date = self.issue_date
+        date_dir = '{:%Y%m%d}'.format(date)
+        region_dir = self.issue_region if region is None else str(region).lower()
+
+        region_snapshot_dir = os.path.join(self.SNAPSHOT_DIR, region_dir, date_dir)
+
+        # Return the directory listing as a list of tuples: (save_time, message, data_file_path, hash_value)
+        dates = set(name.split('.')[0] for name in os.listdir(region_snapshot_dir))
+        snapshots = []
+        for d in dates:
+            save_time = datetime.strptime(d, '%Y%m%d%H%M%S%f')
+            with open(os.path.join(region_snapshot_dir, d + '.txt'), 'r') as mfile:
+                message = mfile.read()
+            data_file_path = os.path.join(region_snapshot_dir, d + '.html')
+            with open(os.path.join(region_snapshot_dir, d + '.sha256'), 'rb') as hfile:
+                hash_value = hfile.read()
+            snapshots += [(save_time, message, data_file_path, hash_value)]
+        return snapshots
+
     # magic methods
     def __str__(self):
         """Get the html code of the document."""
