@@ -2,6 +2,7 @@
 import re
 import os
 from collections import Counter
+from datetime import datetime
 import bs4
 import requests
 from PIL import Image
@@ -12,7 +13,6 @@ import exceptions
 # The review method should eventually . . .
 # TODO: ensure all email addresses are hyperlinked.
 # TODO: ensure all urls are hyperlinked.
-# TODO: allow interactive edit when applicable.
 class Document:
     """Represents an Ismaili Insight HTML newsletter."""
 
@@ -26,6 +26,7 @@ class Document:
             with open(code, 'r') as markup:
                 data = markup.read()
             code = data
+        self._get_issue_info(code)
         # DOCTYPE fix for Ismaili Insight newsletter
         code = re.sub(
             r'<!DOCTYPE HTML PUBLIC “-//W3C//DTD HTML 4\.01 Transitional//EN” “http://www\.w3\.org/TR/html4/loose\.dtd”>', # noqa
@@ -516,6 +517,17 @@ class Document:
                 del transforms[title]
 
         return transforms
+
+    # snapshot methods and helpers
+    def _get_issue_info(self, code):
+        """Extract the issue date and region from the code."""
+        date_string = re.search('(?:January|February|March|April|May|June|'
+                                'June|July|August|September|October|November|December)'
+                                ' \d{1,2}, \d{4}', code, re.I)
+        region_string = re.search('(Central|Midwestern|Northeastern|Southeastern|Southwestern|Western|Florida)'
+                                  ' (?:Region|Area) Events', code, re.I)
+        self.issue_date = datetime.strptime(date_string.group(0), '%B %d, %Y')
+        self.issue_region = region_string.group(0).lower()
 
     # magic methods
     def __str__(self):
