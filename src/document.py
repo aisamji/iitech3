@@ -543,6 +543,7 @@ class Document:
         region = self.issue_region if region is None else str(region).lower()
 
         region_snapshot_dir = os.path.join(self.SNAPSHOT_DIR, region, date)
+        os.makedirs(region_snapshot_dir)
 
         # Generate and compare SHA-256 hash to avoid duplicates
         hasher = hashlib.sha256()
