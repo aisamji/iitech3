@@ -595,6 +595,18 @@ class Document:
             snapshots += [(save_time, message, data_file_path, hash_value)]
         return snapshots
 
+    def load(self, index, *, date=None, region=None):
+        """Replace the current document with the snapshot specified by the parameters."""
+        index = int(index)
+        snapshots = self.list(date, region)
+        old_snapshot = snapshots[index]
+
+        with open(old_snapshot[2], 'r') as sfile:
+            code = sfile.read()
+        self.__init__(code)
+
+        return old_snapshot
+
     # magic methods
     def __str__(self):
         """Get the html code of the document."""
