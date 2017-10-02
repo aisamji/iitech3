@@ -418,7 +418,7 @@ class Document:
     def _get_br_tag(self):
         br_tag = self._data.new_tag('br')
         div_tag = self._data.new_tag('div',
-                                      style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
+                                     style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
         div_tag.append(br_tag)
         return div_tag
 
