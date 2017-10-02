@@ -344,6 +344,11 @@ def main(args=None):
                                           const='southwestern')
     snapshot_save_region_mex.add_argument('-w', '--western', dest='region', action='store_const',
                                           const='western')
+    snapshot_save_target_grp = snapshot_save_cmd.add_argument_group(title='targets')
+    snapshot_save_target_mex = snapshot_save_target_grp.add_mutually_exclusive_group(required=True)
+    snapshot_save_target_mex.add_argument('file', nargs='?')
+    snapshot_save_target_mex.add_argument('-p', '--pasteboard', action='store_const',
+                                          dest='file', const=None,)
 
     snapshot_load_cmd = snapshot_childs.add_parser(LOAD_CMD, prog=' '.join((PROG_NAME, SNAPSHOT_ACT,
                                                                              LOAD_CMD)))
@@ -365,6 +370,11 @@ def main(args=None):
                                           const='southwestern')
     snapshot_load_region_mex.add_argument('-w', '--western', dest='region', action='store_const',
                                           const='western')
+    snapshot_load_target_grp = snapshot_load_cmd.add_argument_group(title='targets')
+    snapshot_load_target_mex = snapshot_load_target_grp.add_mutually_exclusive_group(required=True)
+    snapshot_load_target_mex.add_argument('file', nargs='?')
+    snapshot_load_target_mex.add_argument('-p', '--pasteboard', action='store_const',
+                                          dest='file', const=None,)
 
     snapshot_list_cmd = snapshot_childs.add_parser(LIST_CMD, prog=' '.join((PROG_NAME, SNAPSHOT_ACT,
                                                                             LIST_CMD)))
@@ -385,6 +395,11 @@ def main(args=None):
                                           const='southwestern')
     snapshot_list_region_mex.add_argument('-w', '--western', dest='region', action='store_const',
                                           const='western')
+    snapshot_list_target_grp = snapshot_list_cmd.add_argument_group(title='targets')
+    snapshot_list_target_mex = snapshot_list_target_grp.add_mutually_exclusive_group(required=True)
+    snapshot_list_target_mex.add_argument('file', nargs='?')
+    snapshot_list_target_mex.add_argument('-p', '--pasteboard', action='store_const',
+                                          dest='file', const=None,)
 
     # Define version command
     version_cmd = base_childs.add_parser(VERSION_ACT, prog=' '.join((PROG_NAME, VERSION_ACT)),
