@@ -529,28 +529,29 @@ class Document:
         region_string = re.search('(Central|Midwestern|Northeastern|Southeastern|Southwestern|Western|Florida)'
                                   ' (?:Region|Area) Events', code, re.I)
         self.issue_date = datetime.strptime(date_string.group(0), '%B %d, %Y')
-        self.issue_region = region_string.group(0).lower()
+        self.issue_region = region_string.group(1).lower()
 
     def save(self, message, *, date=None, region=None):
         """Save a snapshot of the document in its current state so that it can be restored later."""
-        code = str(self._data)
-        save_time = '{:%Y%m%d%H%M%S%f}'.format(datetime.today())
+        code = str(self)
+        save_time_obj = datetime.today()
+        save_time = '{:%Y%m%d%H%M%S%f}'.format(save_time_obj)
 
         # Determine regional snapshot directory
         if date is None:
             date = self.issue_date
-        date = '{:%Y%m%d}'.format(date)
+        date_dir = '{:%Y%m%d}'.format(date)
         region = self.issue_region if region is None else str(region).lower()
 
-        region_snapshot_dir = os.path.join(self.SNAPSHOT_DIR, region, date)
-        os.makedirs(region_snapshot_dir)
+        region_snapshot_dir = os.path.join(self.SNAPSHOT_DIR, region, date_dir)
+        os.makedirs(region_snapshot_dir, exist_ok=True)
 
         # Generate and compare SHA-256 hash to avoid duplicates
         hasher = hashlib.sha256()
         hasher.update(code.encode())
         hash_value = hasher.digest()
 
-        hash_files = (name for name in os.listdir(region_snapshot_dir) if name.endwswith('.sha256'))
+        hash_files = (name for name in os.listdir(region_snapshot_dir) if name.endswith('.sha256'))
         for h in hash_files:
             with open(os.path.join(region_snapshot_dir, h), 'rb') as hfile:
                 other_hash = hfile.read()
@@ -571,10 +572,10 @@ class Document:
             mfile.write(message)
 
         # Return tuple consisting of (message, save_time, region, date)
-        return message, save_time, region, date
+        return message, save_time_obj, region, date
 
     def list(self, *, date=None, region=None):
-        """Get a list of all available snapshots."""
+        """Get a list of all available snapshots in reverse chronological order."""
         # Determine regional snapshot directory
         if date is None:
             date = self.issue_date
@@ -582,9 +583,11 @@ class Document:
         region_dir = self.issue_region if region is None else str(region).lower()
 
         region_snapshot_dir = os.path.join(self.SNAPSHOT_DIR, region_dir, date_dir)
+        os.makedirs(region_snapshot_dir, exist_ok=True)
 
         # Return the directory listing as a list of tuples: (save_time, message, data_file_path, hash_value)
         dates = set(name.split('.')[0] for name in os.listdir(region_snapshot_dir))
+        dates = reversed(sorted(dates))
         snapshots = []
         for d in dates:
             save_time = datetime.strptime(d, '%Y%m%d%H%M%S%f')
@@ -594,12 +597,12 @@ class Document:
             with open(os.path.join(region_snapshot_dir, d + '.sha256'), 'rb') as hfile:
                 hash_value = hfile.read()
             snapshots += [(save_time, message, data_file_path, hash_value)]
-        return snapshots
+        return (date, region_dir, snapshots)
 
     def load(self, index, *, date=None, region=None):
         """Replace the current document with the snapshot specified by the parameters."""
         index = int(index)
-        snapshots = self.list(date, region)
+        d, r, snapshots = self.list(date=date, region=region)
         old_snapshot = snapshots[index]
 
         with open(old_snapshot[2], 'r') as sfile:

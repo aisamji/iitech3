@@ -159,6 +159,33 @@ def mark_url(args):
     print('{!r:} marked with {:s}.'.format(args.url, url_statuses[args.status][0]))
 
 
+def save_snapshot(args):
+    """Save a snapshot of the current document state."""
+    html_doc = document.Document(get_code(args.file))
+    info = html_doc.save(args.message, date=args.edition, region=args.region)
+    if info is None:
+        print('Duplicate snapshot. No snapshot saved.')
+    else:
+        print('Snapshot saved for {:s} {:%B %d, %Y}. '.format(info[2].capitalize(), info[3]) +
+              '{0!r:} - {1:%B} {1.day:2}, {1:%Y %l:%M:%S.%f %p}'.format(info[0], info[1]))
+
+
+def load_snapshot(args):
+    """Revert the document code to the state described by the selected snapshot."""
+    html_doc = document.Document(get_code(args.file))
+    snapshot = html_doc.load(args.index, date=args.edition, region=args.region)
+    print('Loaded snapshot {0!r:} - {1:%B} {1.day:2}, {1:%Y %l:%M:%S.%f %p}'.format(snapshot[1], snapshot[0]))
+
+
+def list_snapshots(args):
+    """Print a list of all available snapshots along with their indexes."""
+    html_doc = document.Document(get_code(args.file))
+    edition, region, snapshots = html_doc.list(date=args.edition, region=args.region)
+    print('Snapshots for {:s} {:%B %d, %Y}'.format(region.capitalize(), edition))
+    for i in range(len(snapshots)):
+        print('({:2d}) {!r:} -'.format(i, snapshots[i][1]) +
+              ' {0:%B} {0.day:2}, {0:%Y %l:%M:%S.%f %p}'.format(snapshots[i][0]))
+
 def main(args=None):
     """Run the program with the given args or from the cmd args."""
     # Define base parser
@@ -327,7 +354,8 @@ def main(args=None):
 
     snapshot_save_cmd = snapshot_childs.add_parser(SAVE_CMD, prog=' '.join((PROG_NAME, SNAPSHOT_ACT,
                                                                             SAVE_CMD)))
-    snapshot_save_cmd.set_defaults(func=None)
+    snapshot_save_cmd.set_defaults(func=save_snapshot)
+    snapshot_save_cmd.add_argument('message')
     snapshot_save_cmd.add_argument('-e', '--edition', type=mkdate, metavar='DATE')
     snapshot_save_region_mex = snapshot_save_cmd.add_mutually_exclusive_group()
     snapshot_save_region_mex.add_argument('-ne', '--northeastern', dest='region', action='store_const',
@@ -352,7 +380,7 @@ def main(args=None):
 
     snapshot_load_cmd = snapshot_childs.add_parser(LOAD_CMD, prog=' '.join((PROG_NAME, SNAPSHOT_ACT,
                                                                              LOAD_CMD)))
-    snapshot_load_cmd.set_defaults(func=None)
+    snapshot_load_cmd.set_defaults(func=load_snapshot)
     snapshot_load_cmd.add_argument('index', type=int)
     snapshot_load_cmd.add_argument('-e', '--edition', type=mkdate, metavar='DATE')
     snapshot_load_region_mex = snapshot_load_cmd.add_mutually_exclusive_group()
@@ -378,7 +406,7 @@ def main(args=None):
 
     snapshot_list_cmd = snapshot_childs.add_parser(LIST_CMD, prog=' '.join((PROG_NAME, SNAPSHOT_ACT,
                                                                             LIST_CMD)))
-    snapshot_list_cmd.set_defaults(func=None)
+    snapshot_list_cmd.set_defaults(func=list_snapshots)
     snapshot_list_cmd.add_argument('-e', '--edition', type=mkdate, metavar='DATE')
     snapshot_list_region_mex = snapshot_list_cmd.add_mutually_exclusive_group()
     snapshot_list_region_mex.add_argument('-ne', '--northeastern', dest='region', action='store_const',
