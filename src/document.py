@@ -607,11 +607,7 @@ class Document:
         index = int(index)
         d, r, snapshots = self.list(date=date, region=region)
         old_snapshot = snapshots[index]
-
-        with open(old_snapshot[2], 'r') as sfile:
-            code = sfile.read()
-        self.__init__(code)
-
+        self.__init__(old_snapshot[2])
         return old_snapshot
 
     # magic methods
