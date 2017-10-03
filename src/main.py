@@ -174,6 +174,7 @@ def load_snapshot(args):
     """Revert the document code to the state described by the selected snapshot."""
     html_doc = document.Document(get_code(args.file))
     snapshot = html_doc.load(args.index, date=args.edition, region=args.region)
+    set_code(args.file, html_doc)
     print('Loaded snapshot {0!r:} - {1:%B} {1.day:2}, {1:%Y %l:%M:%S.%f %p}'.format(snapshot[1], snapshot[0]))
 
 
