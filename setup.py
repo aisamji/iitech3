@@ -55,7 +55,8 @@ DEPENDENCIES = [
 SRC_FILES = [os.path.join('src/', name) for name in os.listdir('src/') if os.path.splitext(name)[1] == '.py']
 REPAIRS = [
     (r'^DB_PATH.*#', "DB_PATH = '{:s}'  #".format(os.path.join(DATA_DIR, 'cache.db'))),
-    (r'^#!.*$', '#! {:s}'.format(WHICH_PYTHON))
+    (r'^#!.*$', '#! {:s}'.format(WHICH_PYTHON)),
+    (r'^(\s*SNAPSHOT_DIR).*', r"\1 = '{:s}'".format(os.path.join(DATA_DIR, 'snapshots')))
 ]
 
 
