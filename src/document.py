@@ -1,7 +1,9 @@
 """Classes and constants that represent an Ismaili Insight HTML newsletter."""
 import re
 import os
+import hashlib
 from collections import Counter
+from datetime import datetime
 import bs4
 import requests
 from PIL import Image
@@ -12,12 +14,12 @@ import exceptions
 # The review method should eventually . . .
 # TODO: ensure all email addresses are hyperlinked.
 # TODO: ensure all urls are hyperlinked.
-# TODO: allow interactive edit when applicable.
 class Document:
     """Represents an Ismaili Insight HTML newsletter."""
 
     # Class constants
     BASE_URL = 'https://ismailiinsight.org/eNewsletterPro/uploadedimages/000001/'
+    SNAPSHOT_DIR = 'snapshots'
 
     def __init__(self, code):
         """Initialize a document from the given code."""
@@ -26,6 +28,7 @@ class Document:
             with open(code, 'r') as markup:
                 data = markup.read()
             code = data
+        self._get_issue_info(code)
         # DOCTYPE fix for Ismaili Insight newsletter
         code = re.sub(
             r'<!DOCTYPE HTML PUBLIC “-//W3C//DTD HTML 4\.01 Transitional//EN” “http://www\.w3\.org/TR/html4/loose\.dtd”>', # noqa
@@ -418,7 +421,7 @@ class Document:
     def _get_br_tag(self):
         br_tag = self._data.new_tag('br')
         div_tag = self._data.new_tag('div',
-                                      style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
+                                     style='font-family: Segoe UI; font-size: 13px; color: #595959; text-align: justify;') # noqa
         div_tag.append(br_tag)
         return div_tag
 
@@ -519,6 +522,97 @@ class Document:
                 del transforms[title]
 
         return transforms
+
+    # snapshot methods and helpers
+    def _get_issue_info(self, code):
+        """Extract the issue date and region from the code."""
+        date_string = re.search('(?:January|February|March|April|May|June|'
+                                'June|July|August|September|October|November|December)'
+                                ' \d{1,2}, \d{4}', code, re.I)
+        region_string = re.search('(Central|Midwestern|Northeastern|Southeastern|Southwestern|Western|Florida)'
+                                  ' (?:Region|Area) Events', code, re.I)
+        self.issue_date = datetime.strptime(date_string.group(0), '%B %d, %Y')
+        self.issue_region = region_string.group(1).lower()
+
+    def save(self, message, *, date=None, region=None):
+        """Save a snapshot of the document in its current state so that it can be restored later."""
+        code = str(self)
+        save_time_obj = datetime.today()
+        save_time = '{:%Y%m%d%H%M%S%f}'.format(save_time_obj)
+
+        # Determine regional snapshot directory
+        if date is None:
+            date = self.issue_date
+        date_dir = '{:%Y%m%d}'.format(date)
+        region = self.issue_region if region is None else str(region).lower()
+
+        region_snapshot_dir = os.path.join(self.SNAPSHOT_DIR, region, date_dir)
+        os.makedirs(region_snapshot_dir, exist_ok=True)
+
+        # Generate and compare SHA-256 hash to avoid duplicates
+        hasher = hashlib.sha256()
+        hasher.update(code.encode())
+        hash_value = hasher.digest()
+
+        hash_files = (name for name in os.listdir(region_snapshot_dir) if name.endswith('.sha256'))
+        for h in hash_files:
+            with open(os.path.join(region_snapshot_dir, h), 'rb') as hfile:
+                other_hash = hfile.read()
+            if hash_value == other_hash:
+                return None
+
+        hash_file_name = '{:s}.sha256'.format(save_time)
+        with open(os.path.join(region_snapshot_dir, hash_file_name), 'wb') as hfile:
+            hfile.write(hash_value)
+
+        # Save message and copy html code
+        html_file_name = '{:s}.html'.format(save_time)
+        with open(os.path.join(region_snapshot_dir, html_file_name), 'w') as cfile:
+            cfile.write(code)
+
+        msg_file_name = '{:s}.txt'.format(save_time)
+        with open(os.path.join(region_snapshot_dir, msg_file_name), 'w') as mfile:
+            mfile.write(message)
+
+        # Return tuple consisting of (message, save_time, region, date)
+        return message, save_time_obj, region, date
+
+    def list(self, *, date=None, region=None):
+        """Get a list of all available snapshots in reverse chronological order."""
+        # Determine regional snapshot directory
+        if date is None:
+            date = self.issue_date
+        date_dir = '{:%Y%m%d}'.format(date)
+        region_dir = self.issue_region if region is None else str(region).lower()
+
+        region_snapshot_dir = os.path.join(self.SNAPSHOT_DIR, region_dir, date_dir)
+        os.makedirs(region_snapshot_dir, exist_ok=True)
+
+        # Return the directory listing as a list of tuples: (save_time, message, data_file_path, hash_value)
+        dates = set(name.split('.')[0] for name in os.listdir(region_snapshot_dir))
+        dates = reversed(sorted(dates))
+        snapshots = []
+        for d in dates:
+            save_time = datetime.strptime(d, '%Y%m%d%H%M%S%f')
+            with open(os.path.join(region_snapshot_dir, d + '.txt'), 'r') as mfile:
+                message = mfile.read()
+            data_file_path = os.path.join(region_snapshot_dir, d + '.html')
+            with open(os.path.join(region_snapshot_dir, d + '.sha256'), 'rb') as hfile:
+                hash_value = hfile.read()
+            snapshots += [(save_time, message, data_file_path, hash_value)]
+        return (date, region_dir, snapshots)
+
+    def load(self, index, *, date=None, region=None):
+        """Replace the current document with the snapshot specified by the parameters."""
+        index = int(index)
+        d, r, snapshots = self.list(date=date, region=region)
+        old_snapshot = snapshots[index]
+
+        with open(old_snapshot[2], 'r') as sfile:
+            code = sfile.read()
+        self.__init__(code)
+
+        return old_snapshot
 
     # magic methods
     def __str__(self):

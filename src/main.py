@@ -3,6 +3,7 @@
 
 # Imports
 import argparse
+from datetime import datetime
 from requests.status_codes import _codes as url_statuses
 import yaml
 import document
@@ -24,19 +25,31 @@ APPLY_DESC = 'Apply a transform to the HTML template. This does not review or re
 
 EMAIL_TYPE = 'email'
 WEBPAGE_TYPE = 'webpage'
+
 LOOKUP_ACT = 'lookup'
 LOOKUP_DESC = 'Lookup the status of an email or a url.'
 LOOKUP_EMAIL_DESC = 'Look up the status of an email.'
 LOOKUP_WEBPAGE_DESC = 'Look up the status of a webpage.'
+
 MARK_ACT = 'mark'
 MARK_DESC = 'Manually mark the status of an email or a url.'
 MARK_EMAIL_DESC = 'Manually mark the status of an email.'
 MARK_WEBPAGE_DESC = 'Manually mark the status of a webpage.'
 
+SNAPSHOT_ACT = 'snapshot'
+SAVE_CMD = 'save'
+LOAD_CMD = 'load'
+LIST_CMD = 'list'
+
 HELP_ACT = 'help'
 HELP_DESC = 'Get help on the program or any of its subcommands.'
 VERSION_ACT = 'version'
 VERSION_DESC = 'Print the version of this program.'
+
+
+def mkdate(date_string):
+    """Convert the string into a datetime object."""
+    return datetime.strptime(date_string, '%Y-%m-%d')
 
 
 def get_code(path):
@@ -146,6 +159,33 @@ def mark_url(args):
     print('{!r:} marked with {:s}.'.format(args.url, url_statuses[args.status][0]))
 
 
+def save_snapshot(args):
+    """Save a snapshot of the current document state."""
+    html_doc = document.Document(get_code(args.file))
+    info = html_doc.save(args.message, date=args.edition, region=args.region)
+    if info is None:
+        print('Duplicate snapshot. No snapshot saved.')
+    else:
+        print('Snapshot saved for {:s} {:%B %d, %Y}. '.format(info[2].capitalize(), info[3]) +
+              '{0!r:} - {1:%B} {1.day:2}, {1:%Y %l:%M:%S.%f %p}'.format(info[0], info[1]))
+
+
+def load_snapshot(args):
+    """Revert the document code to the state described by the selected snapshot."""
+    html_doc = document.Document(get_code(args.file))
+    snapshot = html_doc.load(args.index, date=args.edition, region=args.region)
+    print('Loaded snapshot {0!r:} - {1:%B} {1.day:2}, {1:%Y %l:%M:%S.%f %p}'.format(snapshot[1], snapshot[0]))
+
+
+def list_snapshots(args):
+    """Print a list of all available snapshots along with their indexes."""
+    html_doc = document.Document(get_code(args.file))
+    edition, region, snapshots = html_doc.list(date=args.edition, region=args.region)
+    print('Snapshots for {:s} {:%B %d, %Y}'.format(region.capitalize(), edition))
+    for i in range(len(snapshots)):
+        print('({:2d}) {!r:} -'.format(i, snapshots[i][1]) +
+              ' {0:%B} {0.day:2}, {0:%Y %l:%M:%S.%f %p}'.format(snapshots[i][0]))
+
 def main(args=None):
     """Run the program with the given args or from the cmd args."""
     # Define base parser
@@ -160,6 +200,7 @@ def main(args=None):
                                            '{:6s}\t{:s}\n'.format(LOOKUP_ACT, LOOKUP_DESC) +
                                            '{:6s}\t{:s}\n'.format(MARK_ACT, MARK_DESC) +
                                            '{:6s}\t{:s}\n'.format(APPLY_ACT, APPLY_DESC) +
+                                           '{:6s}\t{:s}\n'.format(SNAPSHOT_ACT, 'Manage Snapshots') +
                                            '{:6s}\t{:s}\n'.format(HELP_ACT, HELP_DESC) +
                                            '{:6s}\t{:s}'.format(VERSION_ACT, VERSION_DESC))
 
@@ -303,6 +344,90 @@ def main(args=None):
     apply_target_mex.add_argument('-p', '--pasteboard', action='store_const',
                                   dest='file', const=None,
                                   help='Specifies that the HTML code to transform is on the pasteboard.')
+
+    # Define snapshot parser
+    snapshot_cmd = base_childs.add_parser(SNAPSHOT_ACT, prog=' '.join((PROG_NAME, SNAPSHOT_ACT)),
+                                          usage='%(prog)s {:s} [OPTIONS]\n       '.format(SAVE_CMD) +
+                                                '%(prog)s {:s} [OPTIONS]'.format(LOAD_CMD), add_help=False)
+    snapshot_cmd.set_defaults(func=lambda x: snapshot_cmd.print_help())
+    snapshot_childs = snapshot_cmd.add_subparsers(title='subcommands')
+
+    snapshot_save_cmd = snapshot_childs.add_parser(SAVE_CMD, prog=' '.join((PROG_NAME, SNAPSHOT_ACT,
+                                                                            SAVE_CMD)))
+    snapshot_save_cmd.set_defaults(func=save_snapshot)
+    snapshot_save_cmd.add_argument('message')
+    snapshot_save_cmd.add_argument('-e', '--edition', type=mkdate, metavar='DATE')
+    snapshot_save_region_mex = snapshot_save_cmd.add_mutually_exclusive_group()
+    snapshot_save_region_mex.add_argument('-ne', '--northeastern', dest='region', action='store_const',
+                                          const='northeastern')
+    snapshot_save_region_mex.add_argument('-se', '--southeastern', dest='region', action='store_const',
+                                          const='southeastern')
+    snapshot_save_region_mex.add_argument('-fl', '--florida', dest='region', action='store_const',
+                                          const='florida')
+    snapshot_save_region_mex.add_argument('-mw', '--midwestern', dest='region', action='store_const',
+                                          const='midwestern')
+    snapshot_save_region_mex.add_argument('-c', '--central', dest='region', action='store_const',
+                                          const='central')
+    snapshot_save_region_mex.add_argument('-sw', '--southwestern', dest='region', action='store_const',
+                                          const='southwestern')
+    snapshot_save_region_mex.add_argument('-w', '--western', dest='region', action='store_const',
+                                          const='western')
+    snapshot_save_target_grp = snapshot_save_cmd.add_argument_group(title='targets')
+    snapshot_save_target_mex = snapshot_save_target_grp.add_mutually_exclusive_group(required=True)
+    snapshot_save_target_mex.add_argument('file', nargs='?')
+    snapshot_save_target_mex.add_argument('-p', '--pasteboard', action='store_const',
+                                          dest='file', const=None,)
+
+    snapshot_load_cmd = snapshot_childs.add_parser(LOAD_CMD, prog=' '.join((PROG_NAME, SNAPSHOT_ACT,
+                                                                             LOAD_CMD)))
+    snapshot_load_cmd.set_defaults(func=load_snapshot)
+    snapshot_load_cmd.add_argument('index', type=int)
+    snapshot_load_cmd.add_argument('-e', '--edition', type=mkdate, metavar='DATE')
+    snapshot_load_region_mex = snapshot_load_cmd.add_mutually_exclusive_group()
+    snapshot_load_region_mex.add_argument('-ne', '--northeastern', dest='region', action='store_const',
+                                          const='northeastern')
+    snapshot_load_region_mex.add_argument('-se', '--southeastern', dest='region', action='store_const',
+                                          const='southeastern')
+    snapshot_load_region_mex.add_argument('-fl', '--florida', dest='region', action='store_const',
+                                          const='florida')
+    snapshot_load_region_mex.add_argument('-mw', '--midwestern', dest='region', action='store_const',
+                                          const='midwestern')
+    snapshot_load_region_mex.add_argument('-c', '--central', dest='region', action='store_const',
+                                          const='central')
+    snapshot_load_region_mex.add_argument('-sw', '--southwestern', dest='region', action='store_const',
+                                          const='southwestern')
+    snapshot_load_region_mex.add_argument('-w', '--western', dest='region', action='store_const',
+                                          const='western')
+    snapshot_load_target_grp = snapshot_load_cmd.add_argument_group(title='targets')
+    snapshot_load_target_mex = snapshot_load_target_grp.add_mutually_exclusive_group(required=True)
+    snapshot_load_target_mex.add_argument('file', nargs='?')
+    snapshot_load_target_mex.add_argument('-p', '--pasteboard', action='store_const',
+                                          dest='file', const=None,)
+
+    snapshot_list_cmd = snapshot_childs.add_parser(LIST_CMD, prog=' '.join((PROG_NAME, SNAPSHOT_ACT,
+                                                                            LIST_CMD)))
+    snapshot_list_cmd.set_defaults(func=list_snapshots)
+    snapshot_list_cmd.add_argument('-e', '--edition', type=mkdate, metavar='DATE')
+    snapshot_list_region_mex = snapshot_list_cmd.add_mutually_exclusive_group()
+    snapshot_list_region_mex.add_argument('-ne', '--northeastern', dest='region', action='store_const',
+                                          const='northeastern')
+    snapshot_list_region_mex.add_argument('-se', '--southeastern', dest='region', action='store_const',
+                                          const='southeastern')
+    snapshot_list_region_mex.add_argument('-fl', '--florida', dest='region', action='store_const',
+                                          const='florida')
+    snapshot_list_region_mex.add_argument('-mw', '--midwestern', dest='region', action='store_const',
+                                          const='midwestern')
+    snapshot_list_region_mex.add_argument('-c', '--central', dest='region', action='store_const',
+                                          const='central')
+    snapshot_list_region_mex.add_argument('-sw', '--southwestern', dest='region', action='store_const',
+                                          const='southwestern')
+    snapshot_list_region_mex.add_argument('-w', '--western', dest='region', action='store_const',
+                                          const='western')
+    snapshot_list_target_grp = snapshot_list_cmd.add_argument_group(title='targets')
+    snapshot_list_target_mex = snapshot_list_target_grp.add_mutually_exclusive_group(required=True)
+    snapshot_list_target_mex.add_argument('file', nargs='?')
+    snapshot_list_target_mex.add_argument('-p', '--pasteboard', action='store_const',
+                                          dest='file', const=None,)
 
     # Define version command
     version_cmd = base_childs.add_parser(VERSION_ACT, prog=' '.join((PROG_NAME, VERSION_ACT)),
