@@ -19,7 +19,7 @@ class Document:
 
     # Class constants
     BASE_URL = 'https://ismailiinsight.org/eNewsletterPro/uploadedimages/000001/'
-    SNAPSHOT_DIR = 'snapshots'
+    SNAPSHOT_DIR = 'data/snapshots'
 
     def __init__(self, code):
         """Initialize a document from the given code."""
