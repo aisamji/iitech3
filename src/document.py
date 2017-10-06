@@ -593,6 +593,8 @@ class Document:
         dates = reversed(sorted(dates))
         snapshots = []
         for d in dates:
+            if d == '':
+                continue
             save_time = datetime.strptime(d, '%Y%m%d%H%M%S%f')
             with open(os.path.join(region_snapshot_dir, d + '.txt'), 'r') as mfile:
                 message = mfile.read()
