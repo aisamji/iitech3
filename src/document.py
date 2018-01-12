@@ -478,8 +478,8 @@ class Document:
     def apply(self, transforms):
         """Apply a transformation to the document (eg make all national changes to the document)."""
         if 'top' in transforms:
-            front_image = self._data.find('img', src=re.compile(r'^https://www\.ismailiinsight\.org/enewsletterpro/public_templates/IsmailiInsight/images/20121101Top_1\.jpg$|National')) # noqa
-            front_caption = front_image.parent.div
+            front_image = self._data.find('img', src=re.compile(r'^https://ismailiinsight\.org/eNewsletterPro/uploadedimages/000001/National/default\.jpg$|National')) # noqa
+            front_caption = front_image.parent.parent.find_next_sibling('tr').td
 
             image_data = self._get_image_details(transforms['top']['image'])
             front_image['src'] = image_data['source']
